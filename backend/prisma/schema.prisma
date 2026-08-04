@@ -1,0 +1,146 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+model Tenant {
+  id         String   @id @default(uuid())
+  name       String
+  slug       String   @unique
+  active     Boolean  @default(true)
+  created_at DateTime @default(now())
+  updated_at DateTime @updatedAt
+
+  users        User[]
+  customers    Customer[]
+  services     Service[]
+  appointments Appointment[]
+
+  @@map("tenants")
+}
+
+model User {
+  id            String   @id @default(uuid())
+  tenant_id     String
+  name          String
+  email         String   @unique
+  password_hash String
+  role          Role     @default(BARBER)
+  created_at    DateTime @default(now())
+  updated_at    DateTime @updatedAt
+
+  tenant           Tenant            @relation(fields: [tenant_id], references: [id], onDelete: Cascade)
+  appointments     Appointment[]
+  working_hours    WorkingHours[]
+  blocked_schedule BlockedSchedule[]
+
+  @@map("users")
+}
+
+model Customer {
+  id         String   @id @default(uuid())
+  tenant_id  String
+  name       String
+  phone      String
+  email      String?
+  notes      String?
+  created_at DateTime @default(now())
+  updated_at DateTime @updatedAt
+
+  tenant       Tenant        @relation(fields: [tenant_id], references: [id], onDelete: Cascade)
+  appointments Appointment[]
+
+  @@map("customers")
+}
+
+model Service {
+  id          String   @id @default(uuid())
+  tenant_id   String
+  name        String
+  price       Decimal  @db.Decimal(10, 2)
+  duration    Int      // duration in minutes
+  active      Boolean  @default(true)
+  created_at  DateTime @default(now())
+  updated_at  DateTime @updatedAt
+
+  tenant       Tenant        @relation(fields: [tenant_id], references: [id], onDelete: Cascade)
+  appointments Appointment[]
+
+  @@map("services")
+}
+
+model WorkingHours {
+  id          String   @id @default(uuid())
+  user_id     String
+  day_of_week Int      // 0 = Sunday, 1 = Monday, etc.
+  start_time  String   // e.g. "09:00"
+  end_time    String   // e.g. "18:00"
+  lunch_start String?  // e.g. "12:00"
+  lunch_end   String?  // e.g. "13:00"
+  active      Boolean  @default(true)
+
+  user User @relation(fields: [user_id], references: [id], onDelete: Cascade)
+
+  @@unique([user_id, day_of_week])
+  @@map("working_hours")
+}
+
+model BlockedSchedule {
+  id         String   @id @default(uuid())
+  user_id    String
+  start_date DateTime
+  end_date   DateTime
+  reason     String?
+  created_at DateTime @default(now())
+
+  user User @relation(fields: [user_id], references: [id], onDelete: Cascade)
+
+  @@map("blocked_schedules")
+}
+
+model Appointment {
+  id         String            @id @default(uuid())
+  tenant_id  String
+  user_id    String
+  customer_id String
+  service_id String
+  start_date DateTime
+  end_date   DateTime
+  status     AppointmentStatus @default(SCHEDULED)
+  created_at DateTime          @default(now())
+  updated_at DateTime          @updatedAt
+
+  tenant   Tenant   @relation(fields: [tenant_id], references: [id], onDelete: Cascade)
+  user     User     @relation(fields: [user_id], references: [id], onDelete: Cascade)
+  customer Customer @relation(fields: [customer_id], references: [id], onDelete: Cascade)
+  service  Service  @relation(fields: [service_id], references: [id], onDelete: Cascade)
+
+  @@map("appointments")
+}
+
+model WhatsAppSession {
+  id         String   @id @default(uuid())
+  tenant_id  String   @unique
+  session    String   // Session data/token
+  status     String   @default("DISCONNECTED")
+  created_at DateTime @default(now())
+  updated_at DateTime @updatedAt
+
+  @@map("whatsapp_sessions")
+}
+
+enum Role {
+  ADMIN
+  BARBER
+  CLIENT
+}
+
+enum AppointmentStatus {
+  SCHEDULED
+  COMPLETED
+  CANCELED
+  NO_SHOW
+}
