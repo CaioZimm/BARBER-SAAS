@@ -1,7 +1,6 @@
 import { Request, Response, NextFunction } from 'express'
 import { AuthService } from '../services/auth.service'
 import { registerSchema, loginSchema } from '../dtos/auth.dto'
-import { AuthRequest } from '../middlewares/auth.middleware'
 
 const authService = new AuthService()
 
@@ -22,10 +21,23 @@ export class AuthController {
     } catch (err) { next(err) }
   }
 
-  async me(req: AuthRequest, res: Response, next: NextFunction) {
+  async me(req: Request, res: Response, next: NextFunction) {
     try {
-      const user = await authService.me(req.user!.id)
+      const user = await authService.me((req as any).user.id)
       res.json(user)
+    } catch (err) { next(err) }
+  }
+
+  async refresh(req: Request, res: Response, next: NextFunction) {
+    try {
+      const { refreshToken } = req.body
+      if (!refreshToken) {
+        res.status(401).json({ error: 'Refresh token não fornecido' })
+        return
+      }
+
+      const tokens = await authService.refresh(refreshToken)
+      res.json(tokens)
     } catch (err) { next(err) }
   }
 }

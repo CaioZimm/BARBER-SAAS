@@ -1,10 +1,12 @@
-import prisma from '../config/prisma'
+import { TenantRepository } from '../repositories/tenant.repository'
 import { AppError } from '../middlewares/error.middleware'
+
+const tenantRepository = new TenantRepository()
 
 export class PublicService {
   /** Lista todas as barbearias ativas */
   async listBarbershops(search?: string) {
-    return prisma.tenant.findMany({
+    return tenantRepository.findMany({
       where: {
         active: true,
         ...(search
@@ -31,7 +33,7 @@ export class PublicService {
 
   /** Retorna o perfil completo público de uma barbearia pelo slug */
   async getBarbershopBySlug(slug: string) {
-    const tenant = await prisma.tenant.findUnique({
+    const tenant = await tenantRepository.findUnique({
       where: { slug },
       select: {
         id: true,

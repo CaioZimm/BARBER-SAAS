@@ -15,7 +15,7 @@ export class CustomerController {
 
   async getById(req: AuthRequest, res: Response, next: NextFunction) {
     try {
-      const customer = await customerService.getById(req.user!.tenantId, req.params.id)
+      const customer = await customerService.getById(req.user!.tenantId, req.params.id as string)
       res.json(customer)
     } catch (err) { next(err) }
   }
@@ -31,14 +31,14 @@ export class CustomerController {
   async update(req: AuthRequest, res: Response, next: NextFunction) {
     try {
       const data = updateCustomerSchema.parse(req.body)
-      const customer = await customerService.update(req.user!.tenantId, req.params.id, data)
+      const customer = await customerService.update(req.user!.tenantId, req.params.id as string, data)
       res.json(customer)
     } catch (err) { next(err) }
   }
 
   async delete(req: AuthRequest, res: Response, next: NextFunction) {
     try {
-      await customerService.delete(req.user!.tenantId, req.params.id)
+      await customerService.delete(req.user!.tenantId, req.params.id as string)
       res.status(204).send()
     } catch (err) { next(err) }
   }
