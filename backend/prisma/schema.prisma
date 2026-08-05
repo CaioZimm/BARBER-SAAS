@@ -36,6 +36,7 @@ model User {
   appointments     Appointment[]
   working_hours    WorkingHours[]
   blocked_schedule BlockedSchedule[]
+  refresh_tokens   RefreshToken[]
 
   @@map("users")
 }
@@ -143,4 +144,15 @@ enum AppointmentStatus {
   COMPLETED
   CANCELED
   NO_SHOW
+}
+
+model RefreshToken {
+  id         String   @id @default(uuid())
+  token      String   @unique
+  user_id    String
+  user       User     @relation(fields: [user_id], references: [id], onDelete: Cascade)
+  expires_at DateTime
+  created_at DateTime @default(now())
+
+  @@map("refresh_tokens")
 }
