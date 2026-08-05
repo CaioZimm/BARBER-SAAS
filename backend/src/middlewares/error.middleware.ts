@@ -7,7 +7,7 @@ export function errorHandler(err: Error, req: Request, res: Response, next: Next
   if (err instanceof ZodError) {
     return res.status(422).json({
       error: 'Dados inválidos',
-      issues: err.errors.map((e) => ({ field: e.path.join('.'), message: e.message })),
+      issues: (err as any).issues.map((e: any) => ({ field: e.path.join('.'), message: e.message })),
     })
   }
 
