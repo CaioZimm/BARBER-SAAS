@@ -1,5 +1,6 @@
 import { Router } from 'express'
 import { AppointmentController } from '../controllers/appointment.controller'
+import { requireSubscription } from '../middlewares/requireSubscription'
 import { authenticate } from '../middlewares/auth.middleware'
 
 const router = Router()
@@ -7,10 +8,10 @@ const controller = new AppointmentController()
 
 // Rotas públicas (sem auth) - devem vir antes do middleware
 router.get('/public/:tenantSlug/slots', (req, res, next) => controller.getAvailableSlots(req, res, next))
-router.post('/public/:tenantSlug/book', (req, res, next) => controller.publicBook(req, res, next))
+router.post('/public/:tenantSlug/book', authenticate, (req, res, next) => controller.publicBook(req as any, res, next))
 
 // Rotas protegidas
-router.use(authenticate)
+router.use(authenticate, requireSubscription)
 router.get('/dashboard', (req, res, next) => controller.dashboard(req as any, res, next))
 router.get('/', (req, res, next) => controller.list(req as any, res, next))
 router.get('/:id', (req, res, next) => controller.getById(req as any, res, next))
