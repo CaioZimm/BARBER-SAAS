@@ -5,8 +5,8 @@ import { CreateCustomerDTO, UpdateCustomerDTO } from '../dtos/customer.dto'
 const customerRepository = new CustomerRepository()
 
 export class CustomerService {
-  async list(tenantId: string, search?: string) {
-    return customerRepository.findAll(tenantId, search)
+  async list(tenantId: string, search?: string, filter?: string) {
+    return customerRepository.findAll(tenantId, search, filter)
   }
 
   async getById(tenantId: string, id: string) {

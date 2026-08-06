@@ -1,5 +1,5 @@
-import { Request, Response, NextFunction } from 'express'
 import { PublicService } from '../services/public.service'
+import { Request, Response, NextFunction } from 'express'
 
 const publicService = new PublicService()
 

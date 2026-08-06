@@ -41,14 +41,19 @@ export class PublicService {
         slug: true,
         services: {
           where: { active: true },
-          select: { id: true, name: true, price: true, duration: true },
+          select: { id: true, name: true, price: true, duration: true, photos: true },
           orderBy: { name: 'asc' },
         },
         users: {
-          where: { role: 'BARBER' },
+          where: { role: { in: ['BARBER', 'ADMIN'] }, is_active_barber: true },
           select: {
             id: true,
             name: true,
+            photo: true,
+            bio: true,
+            services: {
+              select: { id: true, name: true, price: true, duration: true, photos: true }
+            },
             working_hours: {
               where: { active: true },
               select: {

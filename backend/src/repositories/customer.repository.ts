@@ -2,7 +2,7 @@ import { Prisma } from '@prisma/client'
 import prisma from '../config/prisma'
 
 export class CustomerRepository {
-  async findAll(tenantId: string, search?: string) {
+  async findAll(tenantId: string, search?: string, filter?: string) {
     const where: Prisma.CustomerWhereInput = { tenant_id: tenantId }
     if (search) {
       where.OR = [
@@ -10,13 +10,40 @@ export class CustomerRepository {
         { phone: { contains: search, mode: 'insensitive' } },
       ]
     }
-    return prisma.customer.findMany({
+    let customers = await prisma.customer.findMany({
       where,
       orderBy: { created_at: 'desc' },
       include: {
         _count: { select: { appointments: true } },
+        appointments: {
+          orderBy: { start_date: 'desc' },
+          take: 1,
+          select: { start_date: true }
+        }
       },
     })
+
+    let result = customers.map(c => ({
+      ...c,
+      total_appointments: c._count.appointments,
+      last_visit: c.appointments.length > 0 ? c.appointments[0].start_date : null
+    }))
+
+    if (filter === 'frequent') {
+      result.sort((a, b) => b.total_appointments - a.total_appointments)
+    } else if (filter === 'recent') {
+      result.sort((a, b) => {
+        if (!a.last_visit) return 1
+        if (!b.last_visit) return -1
+        return new Date(b.last_visit).getTime() - new Date(a.last_visit).getTime()
+      })
+    } else if (filter === 'dormant') {
+      const thirtyDaysAgo = new Date()
+      thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30)
+      result = result.filter(c => c.last_visit && new Date(c.last_visit) < thirtyDaysAgo)
+    }
+
+    return result
   }
 
   async findById(tenantId: string, id: string) {

@@ -18,8 +18,11 @@ export class AppointmentRepository {
     return !!conflict
   }
 
-  async findAll(tenantId: string, userId: string, start?: Date, end?: Date) {
-    const where: Prisma.AppointmentWhereInput = { tenant_id: tenantId, user_id: userId }
+  async findAll(tenantId: string, userId?: string, start?: Date, end?: Date) {
+    const where: Prisma.AppointmentWhereInput = { tenant_id: tenantId }
+    if (userId) {
+      where.user_id = userId
+    }
     if (start && end) {
       where.start_date = { gte: start, lte: end }
     }

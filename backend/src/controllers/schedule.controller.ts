@@ -1,7 +1,7 @@
-import { Response, NextFunction } from 'express'
-import { ScheduleService } from '../services/schedule.service'
 import { workingHoursSchema, createBlockedScheduleSchema } from '../dtos/schedule.dto'
+import { ScheduleService } from '../services/schedule.service'
 import { AuthRequest } from '../middlewares/auth.middleware'
+import { Response, NextFunction } from 'express'
 
 const scheduleService = new ScheduleService()
 
