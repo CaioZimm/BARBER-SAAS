@@ -1,6 +1,6 @@
+import { registerSchema, loginSchema, registerClientSchema } from '../dtos/auth.dto'
 import { Request, Response, NextFunction } from 'express'
 import { AuthService } from '../services/auth.service'
-import { registerSchema, loginSchema } from '../dtos/auth.dto'
 
 const authService = new AuthService()
 
@@ -9,6 +9,14 @@ export class AuthController {
     try {
       const data = registerSchema.parse(req.body)
       const result = await authService.register(data)
+      res.status(201).json(result)
+    } catch (err) { next(err) }
+  }
+
+  async registerClient(req: Request, res: Response, next: NextFunction) {
+    try {
+      const data = registerClientSchema.parse(req.body)
+      const result = await authService.registerClient(data)
       res.status(201).json(result)
     } catch (err) { next(err) }
   }
@@ -24,6 +32,13 @@ export class AuthController {
   async me(req: Request, res: Response, next: NextFunction) {
     try {
       const user = await authService.me((req as any).user.id)
+      res.json(user)
+    } catch (err) { next(err) }
+  }
+
+  async updateMe(req: Request, res: Response, next: NextFunction) {
+    try {
+      const user = await authService.updateMe((req as any).user.id, (req as any).user.tenantId, req.body)
       res.json(user)
     } catch (err) { next(err) }
   }

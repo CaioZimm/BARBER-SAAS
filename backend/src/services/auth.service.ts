@@ -1,10 +1,11 @@
 import bcrypt from 'bcrypt'
 import jwt from 'jsonwebtoken'
 import { AppError } from '../middlewares/error.middleware'
-import { RegisterDTO, LoginDTO } from '../dtos/auth.dto'
+import { RegisterDTO, LoginDTO, RegisterClientDTO } from '../dtos/auth.dto'
 import { AuthRepository } from '../repositories/auth.repository'
 import { UserRepository } from '../repositories/user.repository'
 import { TenantRepository } from '../repositories/tenant.repository'
+import prisma from '../config/prisma'
 
 const authRepository = new AuthRepository()
 const userRepository = new UserRepository()
@@ -28,6 +29,7 @@ export class AuthService {
           create: {
             name: data.name,
             email: data.email,
+            phone: data.phone,
             password_hash: passwordHash,
             role: 'ADMIN',
           },
@@ -47,6 +49,32 @@ export class AuthService {
     }
   }
 
+  async registerClient(data: RegisterClientDTO) {
+    const existingUser = await userRepository.findUnique({ where: { email: data.email } })
+    if (existingUser) throw new AppError('Email já cadastrado', 409)
+
+    const passwordHash = await bcrypt.hash(data.password, 12)
+
+    const user = await prisma.user.create({
+      data: {
+        name: data.name,
+        email: data.email,
+        phone: data.phone,
+        password_hash: passwordHash,
+        role: 'CLIENT',
+        is_active_barber: false,
+      }
+    })
+
+    const { token, refreshToken } = await this.generateTokens(user.id, undefined, user.role)
+
+    return {
+      token,
+      refreshToken,
+      user: { id: user.id, name: user.name, email: user.email, role: user.role },
+    }
+  }
+
   async login(data: LoginDTO) {
     const user = await userRepository.findUnique({
       where: { email: data.email },
@@ -58,15 +86,17 @@ export class AuthService {
     const passwordMatch = await bcrypt.compare(data.password, user.password_hash)
     if (!passwordMatch) throw new AppError('Credenciais inválidas', 401)
 
-    if (!user.tenant.active) throw new AppError('Conta suspensa. Entre em contato com o suporte.', 403)
+    if (user.tenant && !user.tenant.active) {
+      throw new AppError('Conta suspensa. Entre em contato com o suporte.', 403)
+    }
 
-    const { token, refreshToken } = await this.generateTokens(user.id, user.tenant_id, user.role)
+    const { token, refreshToken } = await this.generateTokens(user.id, user.tenant_id ?? undefined, user.role)
 
     return {
       token,
       refreshToken,
       user: { id: user.id, name: user.name, email: user.email, role: user.role },
-      tenant: { id: user.tenant.id, name: user.tenant.name, slug: user.tenant.slug },
+      tenant: user.tenant ? { id: user.tenant.id, name: user.tenant.name, slug: user.tenant.slug } : undefined,
     }
   }
 
@@ -77,6 +107,49 @@ export class AuthService {
     })
     if (!user) throw new AppError('Usuário não encontrado', 404)
     return user
+  }
+
+  async updateMe(userId: string, tenantId: string | undefined, data: any) {
+    let password_hash = undefined
+    if (data.password) {
+      password_hash = await bcrypt.hash(data.password, 8)
+    }
+
+    const updatedUser = await prisma.user.update({
+      where: tenantId ? { id: userId, tenant_id: tenantId } : { id: userId },
+      data: {
+        name: data.name,
+        email: data.email,
+        bio: data.bio,
+        phone: data.phone,
+        photo: data.photo,
+        ...(password_hash && { password_hash })
+      },
+      select: {
+        id: true,
+        name: true,
+        email: true,
+        phone: true,
+        role: true,
+        photo: true,
+        bio: true,
+        tenant: {
+          select: { id: true, name: true, slug: true }
+        }
+      }
+    })
+
+    // Sincronizar dados do usuário com os registros locais de Customer nas barbearias
+    await prisma.customer.updateMany({
+      where: { user_id: userId },
+      data: {
+        name: data.name,
+        ...(data.email && { email: data.email }),
+        ...(data.phone && { phone: data.phone }),
+      }
+    })
+
+    return updatedUser
   }
 
   async refresh(refreshToken: string) {
@@ -91,16 +164,19 @@ export class AuthService {
 
     // Gerar novo par e excluir o antigo (rotação)
     await authRepository.deleteRefreshToken(existingToken.id)
-    return this.generateTokens(existingToken.user.id, existingToken.user.tenant_id, existingToken.user.role)
+    return this.generateTokens(existingToken.user.id, existingToken.user.tenant_id ?? undefined, existingToken.user.role)
   }
 
-  private async generateTokens(userId: string, tenantId: string, role: string) {
-    const token = jwt.sign({ id: userId, tenantId, role }, process.env.JWT_SECRET!, {
+  private async generateTokens(userId: string, tenantId: string | undefined, role: string) {
+    const payload: any = { id: userId, role }
+    if (tenantId) payload.tenantId = tenantId
+
+    const token = jwt.sign(payload, process.env.JWT_SECRET!, {
       expiresIn: '15m', // Access token curto
     })
 
     const refreshPayload = jwt.sign({ id: userId }, process.env.JWT_SECRET!, { expiresIn: '7d' })
-    
+
     await authRepository.createRefreshToken(
       userId,
       refreshPayload,
