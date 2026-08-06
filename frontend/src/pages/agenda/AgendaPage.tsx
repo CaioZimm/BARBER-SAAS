@@ -6,10 +6,12 @@ import { ChevronLeft, ChevronRight, Plus, X, Check } from 'lucide-react'
 import { appointmentsService } from '../../services/appointmentsService'
 import { customersService } from '../../services/customersService'
 import { barberServicesService } from '../../services/barberServicesService'
+import { employeeService } from '../../services/employeeService'
 import type { Appointment, Service, Customer } from '../../interfaces'
 import Button from '../../components/ui/Button'
 import Modal from '../../components/ui/Modal'
 import StatusBadge from '../../components/ui/StatusBadge'
+import { useAuth } from '../../hooks/useAuth'
 import DashboardLayout from '../../components/layout/DashboardLayout'
 import { cn, formatCurrency } from '../../utils'
 
@@ -22,7 +24,10 @@ export default function AgendaPage() {
   const [view, setView] = useState<'week' | 'day'>('week')
   const [newModalOpen, setNewModalOpen] = useState(false)
   const [detailApt, setDetailApt] = useState<Appointment | null>(null)
-  const [newForm, setNewForm] = useState({ customerId: '', serviceId: '', date: format(new Date(), 'yyyy-MM-dd'), time: '09:00' })
+  const [newForm, setNewForm] = useState({ customerId: '', serviceId: '', barberId: '', date: format(new Date(), 'yyyy-MM-dd'), time: '09:00' })
+  const [selectedBarber, setSelectedBarber] = useState('all')
+  const { user } = useAuth()
+  const isAdmin = user?.role === 'ADMIN' || user?.role === 'SUPER_ADMIN'
 
   const weekStart = startOfWeek(viewDate, { weekStartsOn: 1 })
   const weekDays = Array.from({ length: 7 }, (_, i) => addDays(weekStart, i))
@@ -30,8 +35,8 @@ export default function AgendaPage() {
   const queryDate = view === 'day' ? format(selectedDate, 'yyyy-MM-dd') : undefined
 
   const { data: appointments = [] } = useQuery<Appointment[]>({
-    queryKey: ['appointments', queryDate],
-    queryFn: () => appointmentsService.getAppointments(queryDate),
+    queryKey: ['appointments', queryDate, selectedBarber],
+    queryFn: () => appointmentsService.getAppointments(queryDate, selectedBarber === 'all' ? undefined : selectedBarber),
   })
 
   const { data: customers = [] } = useQuery<Customer[]>({
@@ -44,12 +49,18 @@ export default function AgendaPage() {
     queryFn: () => barberServicesService.getServices(),
   })
 
+  const { data: employees = [] } = useQuery<any[]>({
+    queryKey: ['employees'],
+    queryFn: () => employeeService.list(),
+  })
+
   const createMutation = useMutation({
-    mutationFn: (newApt: { customerId: string; serviceId: string; startDate: string }) =>
+    mutationFn: (newApt: { customerId: string; serviceId: string; barberId: string; startDate: string }) =>
       appointmentsService.createAppointment(newApt),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['appointments'] })
       setNewModalOpen(false)
+      setNewForm({ customerId: '', serviceId: '', barberId: '', date: format(new Date(), 'yyyy-MM-dd'), time: '09:00' })
     },
   })
 
@@ -107,6 +118,18 @@ export default function AgendaPage() {
               <button onClick={() => setView('week')} className={cn('px-3 py-1 text-sm rounded-md transition-colors', view === 'week' ? 'bg-zinc-700 text-white' : 'text-zinc-400 hover:text-white')}>Semana</button>
               <button onClick={() => setView('day')} className={cn('px-3 py-1 text-sm rounded-md transition-colors', view === 'day' ? 'bg-zinc-700 text-white' : 'text-zinc-400 hover:text-white')}>Dia</button>
             </div>
+            {isAdmin && (
+              <select
+                className="bg-zinc-800 text-zinc-100 text-sm rounded-lg px-3 py-1.5 border border-zinc-700 focus:outline-none focus:ring-1 focus:ring-amber-500 max-w-[150px]"
+                value={selectedBarber}
+                onChange={(e) => setSelectedBarber(e.target.value)}
+              >
+                <option value="all">Todos barbeiros</option>
+                {employees.filter(e => e.is_active_barber).map(e => (
+                  <option key={e.id} value={e.id}>{e.name.split(' ')[0]}</option>
+                ))}
+              </select>
+            )}
             <Button onClick={() => setNewModalOpen(true)}>
               <Plus size={16} /> Agendar
             </Button>
@@ -117,7 +140,7 @@ export default function AgendaPage() {
         {view === 'week' && (
           <div className="bg-zinc-900 border border-zinc-800 rounded-xl overflow-auto">
             {/* Day headers */}
-            <div className="grid grid-cols-8 border-b border-zinc-800">
+            <div className="grid grid-cols-8 border-b border-zinc-800 min-w-[700px]">
               <div className="w-16" />
               {weekDays.map((day) => (
                 <div
@@ -138,7 +161,7 @@ export default function AgendaPage() {
             {/* Time grid */}
             <div className="max-h-[600px] overflow-y-auto">
               {HOURS.map((hour) => (
-                <div key={hour} className="grid grid-cols-8 border-b border-zinc-800/50 min-h-[60px]">
+                <div key={hour} className="grid grid-cols-8 border-b border-zinc-800/50 min-h-[60px] min-w-[700px]">
                   <div className="w-16 flex items-start justify-end pr-3 pt-1">
                     <span className="text-xs text-zinc-600">{String(hour).padStart(2, '0')}:00</span>
                   </div>
@@ -157,7 +180,12 @@ export default function AgendaPage() {
                                   'bg-zinc-700 text-zinc-400 border border-zinc-600'
                             )}
                           >
-                            <p className="font-semibold truncate">{apt.customer.name}</p>
+                            <div className="flex justify-between items-start gap-1">
+                              <p className="font-semibold truncate">{apt.customer.name}</p>
+                              {isAdmin && apt.user && selectedBarber === 'all' && (
+                                <span className="text-[10px] bg-black/20 px-1 rounded truncate shrink-0 max-w-[50px]">{apt.user.name.split(' ')[0]}</span>
+                              )}
+                            </div>
                             <p className="truncate opacity-75">{apt.service.name}</p>
                           </button>
                         ))}
@@ -188,7 +216,12 @@ export default function AgendaPage() {
                     </div>
                     <div className="w-1 h-10 rounded-full bg-amber-500 shrink-0" />
                     <div className="flex-1">
-                      <p className="font-semibold text-white">{apt.customer.name}</p>
+                      <div className="flex items-center gap-2">
+                        <p className="font-semibold text-white">{apt.customer.name}</p>
+                        {isAdmin && apt.user && selectedBarber === 'all' && (
+                          <span className="text-xs bg-zinc-800 text-zinc-400 px-2 py-0.5 rounded-full">{apt.user.name}</span>
+                        )}
+                      </div>
                       <p className="text-sm text-zinc-400">{apt.service.name} · {formatCurrency(Number(apt.service.price))}</p>
                     </div>
                     <StatusBadge status={apt.status} />
@@ -226,6 +259,17 @@ export default function AgendaPage() {
                 ))}
               </select>
             </div>
+            <div className="flex flex-col gap-1.5">
+              <label className="text-sm font-medium text-zinc-300">Barbeiro *</label>
+              <select
+                className="w-full rounded-lg border border-zinc-700 bg-zinc-900 px-3 py-2 text-sm text-zinc-100 focus:outline-none focus:ring-2 focus:ring-amber-500"
+                value={newForm.barberId}
+                onChange={(e) => setNewForm((f) => ({ ...f, barberId: e.target.value }))}
+              >
+                <option value="">Selecione o barbeiro</option>
+                {employees.filter(e => e.is_active_barber).map((e) => <option key={e.id} value={e.id}>{e.name}</option>)}
+              </select>
+            </div>
             <div className="grid grid-cols-2 gap-4">
               <div className="flex flex-col gap-1.5">
                 <label className="text-sm font-medium text-zinc-300">Data *</label>
@@ -257,9 +301,10 @@ export default function AgendaPage() {
                 onClick={() => createMutation.mutate({
                   customerId: newForm.customerId,
                   serviceId: newForm.serviceId,
-                  startDate: `${newForm.date}T${newForm.time}:00.000Z`,
+                  barberId: newForm.barberId,
+                  startDate: new Date(`${newForm.date}T${newForm.time}:00`).toISOString(),
                 })}
-                disabled={!newForm.customerId || !newForm.serviceId}
+                disabled={!newForm.customerId || !newForm.serviceId || !newForm.barberId}
               >
                 Confirmar
               </Button>

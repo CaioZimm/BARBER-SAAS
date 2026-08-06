@@ -32,9 +32,9 @@ export default function DashboardPage() {
     <DashboardLayout>
       <div className="space-y-8">
         {/* Header */}
-        <div className="flex items-start justify-between mt-12 lg:mt-1">
+        <div className="flex items-start justify-between">
           <div>
-            <h1 className="text-2xl font-bold text-white">Olá, {user?.name?.split(' ')[0]} 👋</h1>
+            <h1 className="text-2xl font-bold text-white">Olá, {user?.name?.split(' ')[0]}!</h1>
             <p className="text-zinc-400 mt-1">{todayCapitalized}</p>
           </div>
         </div>

@@ -1,5 +1,5 @@
-import api from '../lib/axios'
 import type { WorkingHour, BlockedSchedule } from '../interfaces'
+import api from '../lib/axios'
 
 export const scheduleService = {
   getWorkingHours: async (): Promise<WorkingHour[]> => {

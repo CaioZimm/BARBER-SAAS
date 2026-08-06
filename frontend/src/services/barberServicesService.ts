@@ -1,5 +1,5 @@
-import api from '../lib/axios'
 import type { Service, ServiceFormData } from '../interfaces'
+import api from '../lib/axios'
 
 export const barberServicesService = {
   getServices: async (): Promise<Service[]> => {

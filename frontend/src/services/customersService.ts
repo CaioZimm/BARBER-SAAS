@@ -1,9 +1,12 @@
-import api from '../lib/axios'
 import type { Customer, CustomerFormData } from '../interfaces'
+import api from '../lib/axios'
 
 export const customersService = {
-  getCustomers: async (search: string = ''): Promise<Customer[]> => {
-    const { data } = await api.get('/customers', { params: { search } })
+  getCustomers: async (search?: string, filter?: string): Promise<Customer[]> => {
+    const params = new URLSearchParams()
+    if (search) params.append('search', search)
+    if (filter) params.append('filter', filter)
+    const { data } = await api.get('/customers?' + params.toString())
     return data
   },
   createCustomer: async (payload: CustomerFormData): Promise<Customer> => {

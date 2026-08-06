@@ -1,5 +1,5 @@
-import api from '../lib/axios'
 import type { DashboardStats } from '../interfaces'
+import api from '../lib/axios'
 
 export const dashboardService = {
   getDashboardStats: async (): Promise<DashboardStats> => {
