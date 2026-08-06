@@ -1,7 +1,7 @@
 import { NavLink, useNavigate } from 'react-router-dom'
 import { LayoutDashboard, Calendar, Users, Scissors, Settings, LogOut, Menu, X, Store } from 'lucide-react'
-import { useState } from 'react'
 import { useAuth } from '../../hooks/useAuth'
+import { useState } from 'react'
 import { cn } from '../../utils'
 
 const navItems = [
@@ -9,11 +9,9 @@ const navItems = [
   { to: '/agenda', icon: Calendar, label: 'Agenda' },
   { to: '/clientes', icon: Users, label: 'Clientes' },
   { to: '/servicos', icon: Scissors, label: 'Serviços' },
+  { to: '/equipe', icon: Users, label: 'Equipe' },
+  { to: '/assinatura', icon: Store, label: 'Assinatura' },
   { to: '/configuracoes', icon: Settings, label: 'Configurações' },
-]
-
-const externalItems = [
-  { to: '/explore', icon: Store, label: 'Portal do Cliente' },
 ]
 
 export default function Sidebar() {
@@ -62,30 +60,30 @@ export default function Sidebar() {
           </NavLink>
         ))}
 
-        {/* Divider */}
-        <div className="pt-2 pb-1">
-          <div className="border-t border-zinc-800" />
-          <p className="text-[10px] text-zinc-600 uppercase tracking-wider font-medium mt-3 px-3">Outros</p>
-        </div>
-
-        {externalItems.map(({ to, icon: Icon, label }) => (
-          <NavLink
-            key={to}
-            to={to}
-            onClick={() => setMobileOpen(false)}
-            className={({ isActive }) =>
-              cn(
-                'flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-all duration-150',
-                isActive
-                  ? 'bg-zinc-800 text-zinc-200 border border-zinc-700'
-                  : 'text-zinc-500 hover:bg-zinc-800 hover:text-zinc-300'
-              )
-            }
-          >
-            <Icon size={18} />
-            {label}
-          </NavLink>
-        ))}
+        {user?.role === 'SUPER_ADMIN' && (
+          <>
+            <div className="pt-4 pb-2 px-3">
+              <p className="text-xs font-semibold text-zinc-500 uppercase tracking-wider">
+                Super Admin
+              </p>
+            </div>
+            <NavLink
+              to="/admin"
+              onClick={() => setMobileOpen(false)}
+              className={({ isActive }) =>
+                cn(
+                  'flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-all duration-150',
+                  isActive
+                    ? 'bg-amber-500/10 text-amber-400 border border-amber-500/20'
+                    : 'text-zinc-400 hover:bg-zinc-800 hover:text-zinc-100'
+                )
+              }
+            >
+              <LayoutDashboard size={18} />
+              <span>Administração</span>
+            </NavLink>
+          </>
+        )}
       </nav>
 
       {/* User */}
@@ -100,7 +98,7 @@ export default function Sidebar() {
           </div>
           <button
             onClick={handleLogout}
-            className="p-1.5 rounded-md text-zinc-500 hover:text-red-400 hover:bg-zinc-700 transition-colors"
+            className="p-2 rounded-md text-red-300 hover:text-red-100 hover:bg-red-600/50 transition-colors cursor-pointer bg-red-500/40 "
             title="Sair"
           >
             <LogOut size={16} />
@@ -112,13 +110,21 @@ export default function Sidebar() {
 
   return (
     <>
-      {/* Mobile Toggle */}
-      <button
-        className="lg:hidden fixed top-4 left-4 z-50 p-2 bg-zinc-800 rounded-lg text-white border border-zinc-700"
-        onClick={() => setMobileOpen(!mobileOpen)}
-      >
-        {mobileOpen ? <X size={20} /> : <Menu size={20} />}
-      </button>
+      {/* Mobile Header */}
+      <div className="lg:hidden sticky top-0 z-40 bg-zinc-950 border-b border-zinc-800 p-4 flex items-center justify-between">
+        <div className="flex items-center gap-2">
+          <div className="w-8 h-8 bg-amber-500 rounded-lg flex items-center justify-center">
+            <Scissors size={16} className="text-white" />
+          </div>
+          <span className="text-lg font-bold text-white">{user?.tenant?.name || 'BarberSaaS'}</span>
+        </div>
+        <button
+          className="p-2 bg-zinc-900 rounded-lg text-white border border-zinc-800 hover:bg-zinc-800 transition-colors"
+          onClick={() => setMobileOpen(!mobileOpen)}
+        >
+          {mobileOpen ? <X size={20} /> : <Menu size={20} />}
+        </button>
+      </div>
 
       {/* Mobile Overlay */}
       {mobileOpen && (
