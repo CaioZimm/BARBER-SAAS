@@ -1,54 +1,53 @@
 import { useState, useEffect } from 'react'
 import { format, parseISO } from 'date-fns'
 import { ptBR } from 'date-fns/locale'
-import { Scissors, Clock, Calendar, CheckCircle } from 'lucide-react'
+import { Scissors, Clock, Calendar, CheckCircle, User } from 'lucide-react'
 import { appointmentsService } from '../../services/appointmentsService'
+import { publicService } from '../../services/publicService'
 import Button from '../../components/ui/Button'
-import type { Service, Tenant } from '../../interfaces'
-import Input from '../../components/ui/Input'
 import { formatCurrency } from '../../utils'
+import { useAuth } from '../../hooks/useAuth'
+import { useNavigate } from 'react-router-dom'
 
-type Step = 'service' | 'datetime' | 'info' | 'success'
+type Step = 'barber' | 'service' | 'datetime' | 'info' | 'success'
 
 export default function PublicBookingPage() {
-  const slug = window.location.pathname.split('/')[2] // /booking/:slug
-  const [tenant, setTenant] = useState<Tenant | null>(null)
-  const [services] = useState<any[]>([])
+  const { user } = useAuth()
+  const navigate = useNavigate()
+  const slug = window.location.pathname.split('/')[2]
+  const [tenant, setTenant] = useState<any>(null)
   const [slots, setSlots] = useState<string[]>([])
-  const [step, setStep] = useState<Step>('service')
+  const [step, setStep] = useState<Step>('barber')
   const [isLoading, setIsLoading] = useState(false)
   const [error, setError] = useState('')
 
-  const [selectedService, setSelectedService] = useState<Service | null>(null)
+  const [selectedBarber, setSelectedBarber] = useState<any>(null)
+  const [selectedService, setSelectedService] = useState<any>(null)
   const [selectedDate, setSelectedDate] = useState(format(new Date(), 'yyyy-MM-dd'))
   const [selectedSlot, setSelectedSlot] = useState<string | null>(null)
-  const [form, setForm] = useState({ name: '', phone: '' })
 
   useEffect(() => {
-    // Fetch tenant data e serviços
-    appointmentsService.getPublicSlots(slug, selectedDate).catch(() => { })
-    // Fetch services from public endpoint (reuse authenticated)
-    // In production, create a dedicated public endpoint for tenant info
-    setTenant({ id: '', name: 'Barbearia', slug })
+    publicService.getBarbershopBySlug(slug)
+      .then((data) => setTenant(data))
+      .catch(() => setError('Barbearia não encontrada'))
   }, [slug])
 
   useEffect(() => {
-    if (step === 'datetime') {
-      appointmentsService.getPublicSlots(slug, selectedDate)
+    if (step === 'datetime' && selectedBarber) {
+      appointmentsService.getPublicSlots(slug, selectedDate, selectedBarber.id)
         .then((data) => setSlots(data))
         .catch(() => setSlots([]))
     }
-  }, [selectedDate, step, slug])
+  }, [selectedDate, step, slug, selectedBarber])
 
   const handleBook = async () => {
-    if (!selectedSlot || !selectedService) return
+    if (!selectedSlot || !selectedService || !selectedBarber) return
     setIsLoading(true)
     setError('')
     try {
       await appointmentsService.bookPublicAppointment(slug, {
-        name: form.name,
-        phone: form.phone,
         serviceId: selectedService.id,
+        barberId: selectedBarber.id,
         startDate: selectedSlot,
       })
       setStep('success')
@@ -68,18 +67,29 @@ export default function PublicBookingPage() {
           </div>
           <h2 className="text-2xl font-bold text-white">Agendado!</h2>
           <p className="text-zinc-400">
-            Seu agendamento foi confirmado para{' '}
+            Seu agendamento com <span className="font-semibold text-white">{selectedBarber?.name}</span> foi confirmado para{' '}
             <span className="text-amber-400 font-semibold">
               {selectedSlot && format(parseISO(selectedSlot), "dd/MM 'às' HH:mm", { locale: ptBR })}
             </span>
           </p>
-          <Button className="w-full" onClick={() => { setStep('service'); setSelectedSlot(null); setSelectedService(null) }}>
-            Fazer outro agendamento
+          <Button className="w-full" onClick={() => navigate('/meus-agendamentos')}>
+            Ver meus agendamentos
           </Button>
         </div>
       </div>
     )
   }
+
+  if (error && !tenant) {
+    return (
+      <div className="min-h-screen bg-zinc-950 flex items-center justify-center p-6">
+        <div className="text-center text-zinc-400">{error}</div>
+      </div>
+    )
+  }
+
+  const stepsList: Step[] = ['barber', 'service', 'datetime', 'info']
+  const currentStepIndex = stepsList.indexOf(step)
 
   return (
     <div className="min-h-screen bg-zinc-950">
@@ -90,7 +100,7 @@ export default function PublicBookingPage() {
             <Scissors size={18} className="text-white" />
           </div>
           <div>
-            <h1 className="text-base font-bold text-white">{tenant?.name || 'Barbearia'}</h1>
+            <h1 className="text-base font-bold text-white">{tenant?.name || 'Carregando...'}</h1>
             <p className="text-xs text-zinc-500">Agendamento Online</p>
           </div>
         </div>
@@ -99,49 +109,100 @@ export default function PublicBookingPage() {
       <div className="max-w-lg mx-auto p-6 space-y-6">
         {/* Steps indicator */}
         <div className="flex items-center gap-2">
-          {(['service', 'datetime', 'info'] as Step[]).map((s, i) => (
+          {stepsList.map((s, i) => (
             <div key={s} className="flex items-center gap-2">
-              <div className={`w-7 h-7 rounded-full text-xs font-bold flex items-center justify-center ${step === s ? 'bg-amber-500 text-white' : i < ['service', 'datetime', 'info'].indexOf(step) ? 'bg-green-500/20 text-green-400' : 'bg-zinc-800 text-zinc-500'}`}>
+              <div className={`w-7 h-7 rounded-full text-xs font-bold flex items-center justify-center ${step === s ? 'bg-amber-500 text-white' : i < currentStepIndex ? 'bg-green-500/20 text-green-400' : 'bg-zinc-800 text-zinc-500'}`}>
                 {i + 1}
               </div>
-              {i < 2 && <div className="flex-1 h-px bg-zinc-800" />}
+              {i < stepsList.length - 1 && <div className="flex-1 h-px bg-zinc-800" min-width="20px" />}
             </div>
           ))}
         </div>
 
-        {/* Step 1: Service */}
+        {/* Step 1: Barber */}
+        {step === 'barber' && (
+          <div className="space-y-4">
+            <h2 className="text-lg font-bold text-white">Escolha o profissional</h2>
+            {!tenant && <p className="text-zinc-500 text-sm">Carregando profissionais...</p>}
+            {tenant?.users?.map((barber: any) => (
+              <button
+                key={barber.id}
+                onClick={() => { setSelectedBarber(barber); setStep('service') }}
+                className="w-full text-left p-4 rounded-xl border border-zinc-800 hover:border-amber-500/50 hover:bg-amber-500/5 transition-all bg-zinc-900 flex items-center gap-4"
+              >
+                <div className="w-12 h-12 bg-zinc-800 rounded-full flex items-center justify-center overflow-hidden border border-zinc-700">
+                  {barber.photo ? (
+                    <img src={barber.photo} alt={barber.name} className="w-full h-full object-cover" />
+                  ) : (
+                    <User size={20} className="text-zinc-500" />
+                  )}
+                </div>
+                <div>
+                  <p className="font-semibold text-white">{barber.name}</p>
+                  {barber.bio && <p className="text-xs text-zinc-400 mt-1">{barber.bio}</p>}
+                </div>
+              </button>
+            ))}
+            {tenant?.users?.length === 0 && (
+              <p className="text-zinc-500 text-sm">Nenhum profissional disponível no momento.</p>
+            )}
+          </div>
+        )}
+
+        {/* Step 2: Service */}
         {step === 'service' && (
           <div className="space-y-4">
-            <h2 className="text-lg font-bold text-white">Escolha o serviço</h2>
-            {services.length === 0 && (
-              <p className="text-zinc-500 text-sm">Carregando serviços...</p>
+            <div className="flex items-center gap-3">
+              <button onClick={() => setStep('barber')} className="text-zinc-500 hover:text-white">←</button>
+              <h2 className="text-lg font-bold text-white">Serviços com {selectedBarber?.name}</h2>
+            </div>
+            {selectedBarber?.services?.length === 0 && (
+              <p className="text-zinc-500 text-sm">Este profissional não possui serviços cadastrados.</p>
             )}
-            {services.map((s) => (
+            {selectedBarber?.services?.map((s: any) => (
               <button
                 key={s.id}
                 onClick={() => { setSelectedService(s); setStep('datetime') }}
                 className="w-full text-left p-4 rounded-xl border border-zinc-800 hover:border-amber-500/50 hover:bg-amber-500/5 transition-all bg-zinc-900"
               >
                 <div className="flex items-center justify-between">
-                  <div>
-                    <p className="font-semibold text-white">{s.name}</p>
-                    <p className="text-xs text-zinc-400 flex items-center gap-1 mt-1">
-                      <Clock size={12} /> {s.duration} minutos
-                    </p>
+                  <div className="flex items-center gap-3">
+                    {s.photos && s.photos.length > 0 ? (
+                      <div className="w-12 h-12 rounded-lg overflow-hidden flex-shrink-0">
+                        <img src={s.photos[0]} alt={s.name} className="w-full h-full object-cover" />
+                      </div>
+                    ) : (
+                      <div className="w-12 h-12 rounded-lg bg-zinc-800 flex items-center justify-center flex-shrink-0 text-amber-500/50">
+                        <Scissors size={20} />
+                      </div>
+                    )}
+                    <div>
+                      <p className="font-semibold text-white">{s.name}</p>
+                      <p className="text-xs text-zinc-400 flex items-center gap-1 mt-1">
+                        <Clock size={12} /> {s.duration} minutos
+                      </p>
+                    </div>
                   </div>
                   <span className="font-semibold text-green-400">{formatCurrency(Number(s.price))}</span>
                 </div>
+                {s.photos && s.photos.length > 1 && (
+                  <div className="mt-4 flex gap-2 overflow-x-auto pb-2 snap-x">
+                    {s.photos.slice(1).map((photo: string, i: number) => (
+                      <img key={i} src={photo} alt="" className="w-16 h-16 rounded-md object-cover flex-shrink-0 snap-start border border-zinc-800" />
+                    ))}
+                  </div>
+                )}
               </button>
             ))}
           </div>
         )}
 
-        {/* Step 2: Date & Time */}
+        {/* Step 3: Date & Time */}
         {step === 'datetime' && (
           <div className="space-y-4">
             <div className="flex items-center gap-3">
               <button onClick={() => setStep('service')} className="text-zinc-500 hover:text-white">←</button>
-              <h2 className="text-lg font-bold text-white">Escolha a data e horário</h2>
+              <h2 className="text-lg font-bold text-white">Data e horário com {selectedBarber?.name}</h2>
             </div>
             <div className="flex flex-col gap-1.5">
               <label className="text-sm font-medium text-zinc-300">Data</label>
@@ -179,7 +240,7 @@ export default function PublicBookingPage() {
           </div>
         )}
 
-        {/* Step 3: Info */}
+        {/* Step 4: Info */}
         {step === 'info' && (
           <div className="space-y-4">
             <div className="flex items-center gap-3">
@@ -187,7 +248,10 @@ export default function PublicBookingPage() {
               <h2 className="text-lg font-bold text-white">Seus dados</h2>
             </div>
             {/* Resumo */}
-            <div className="bg-zinc-900 border border-zinc-800 rounded-xl p-4 space-y-2 text-sm">
+            <div className="bg-zinc-900 border border-zinc-800 rounded-xl p-4 space-y-3 text-sm">
+              <div className="flex items-center gap-2 text-zinc-400">
+                <User size={14} /> <span>Profissional: <strong className="text-white">{selectedBarber?.name}</strong></span>
+              </div>
               <div className="flex items-center gap-2 text-zinc-400">
                 <Scissors size={14} /> <span>{selectedService?.name}</span>
                 <span className="ml-auto text-amber-400 font-bold">{formatCurrency(Number(selectedService?.price || 0))}</span>
@@ -197,12 +261,21 @@ export default function PublicBookingPage() {
                 <span>{selectedSlot && format(parseISO(selectedSlot), "dd/MM 'às' HH:mm", { locale: ptBR })}</span>
               </div>
             </div>
-            <Input id="pub-name" label="Seu nome *" placeholder="João Silva" value={form.name} onChange={(e) => setForm((f) => ({ ...f, name: e.target.value }))} />
-            <Input id="pub-phone" label="WhatsApp *" placeholder="(11) 99999-9999" value={form.phone} onChange={(e) => setForm((f) => ({ ...f, phone: e.target.value }))} />
-            {error && <p className="text-red-400 text-sm">{error}</p>}
-            <Button className="w-full" size="lg" isLoading={isLoading} onClick={handleBook} disabled={!form.name || !form.phone}>
-              Confirmar agendamento
-            </Button>
+            {user ? (
+              <>
+                <Button className="w-full" size="lg" isLoading={isLoading} onClick={handleBook}>
+                  Confirmar agendamento
+                </Button>
+              </>
+            ) : (
+              <div className="bg-amber-500/10 border border-amber-500/20 rounded-xl p-4 text-center space-y-4">
+                <p className="text-zinc-300">Você precisa ter uma conta para agendar.</p>
+                <div className="flex gap-2">
+                  <Button className="flex-1" variant="secondary" onClick={() => navigate('/login')}>Fazer Login</Button>
+                  <Button className="flex-1" onClick={() => navigate('/register')}>Criar Conta</Button>
+                </div>
+              </div>
+            )}
           </div>
         )}
       </div>

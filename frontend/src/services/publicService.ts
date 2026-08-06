@@ -1,5 +1,5 @@
-import api from '../lib/axios'
 import type { Barbershop } from '../interfaces'
+import api from '../lib/axios'
 
 export const publicService = {
   getBarbershops: async (search: string = ''): Promise<Barbershop[]> => {

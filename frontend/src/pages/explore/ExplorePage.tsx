@@ -1,8 +1,9 @@
 import { useState } from 'react'
 import { useQuery } from '@tanstack/react-query'
 import { useNavigate } from 'react-router-dom'
-import { Search, Scissors, MapPin, Clock, ChevronRight, Sparkles } from 'lucide-react'
+import { Search, Scissors, MapPin, Clock, ChevronRight, LogOut } from 'lucide-react'
 import { publicService } from '../../services/publicService'
+import { useAuth } from '../../hooks/useAuth'
 import type { Barbershop } from '../../interfaces'
 import { formatCurrency } from '../../utils'
 import Input from '../../components/ui/Input'
@@ -35,15 +36,52 @@ export default function ExplorePage() {
       publicService.getBarbershops(search),
   })
 
+  const { user, logout } = useAuth()
+
   return (
     <div className="min-h-screen bg-zinc-950">
+      {/* Header / Nav */}
+      <nav className="border-b border-zinc-800 bg-zinc-950/80 backdrop-blur-md sticky top-0 z-50">
+        <div className="max-w-5xl mx-auto px-6 h-16 flex items-center justify-between">
+          <div className="flex items-center gap-2 font-bold text-white text-lg">
+            <Scissors className="text-amber-500" size={20} />
+            Barbearia App
+          </div>
+          <div className="flex items-center gap-4">
+            {user ? (
+              <>
+                <button onClick={() => navigate('/meus-agendamentos')} className="text-sm text-zinc-300 hover:text-white transition-colors cursor-pointer">
+                  {user.role === 'BARBER' || user.role === 'ADMIN' ? 'Dashboard' : 'Meus Agendamentos'}
+                </button>
+                <div className="flex items-center gap-3 ml-2 pl-4 border-l border-zinc-800">
+                  <div className="flex flex-col items-end hidden sm:flex">
+                    <span className="text-sm font-medium text-white">{user.name}</span>
+                  </div>
+                  <button onClick={logout} className="p-2 text-zinc-400 hover:text-red-400 hover:bg-zinc-900 rounded-lg transition-colors" title="Sair">
+                    <LogOut size={18} />
+                  </button>
+                </div>
+              </>
+            ) : (
+              <>
+                <button onClick={() => navigate('/login')} className="text-sm text-zinc-400 hover:text-white font-medium transition-colors">
+                  Entrar
+                </button>
+                <button onClick={() => navigate('/register')} className="text-sm bg-amber-500 hover:bg-amber-600 text-black font-semibold py-1.5 px-4 rounded-full transition-colors">
+                  Criar conta
+                </button>
+              </>
+            )}
+          </div>
+        </div>
+      </nav>
+
       {/* Hero */}
       <div className="relative overflow-hidden border-b border-zinc-800">
         <div className="absolute inset-0 bg-gradient-to-br from-amber-500/5 via-transparent to-transparent" />
         <div className="relative max-w-5xl mx-auto px-6 py-16 text-center">
           <div className="inline-flex items-center gap-2 bg-amber-500/10 border border-amber-500/20 rounded-full px-4 py-1.5 mb-6">
-            <Sparkles size={14} className="text-amber-400" />
-            <span className="text-amber-400 text-xs font-medium">Encontre a barbearia perfeita</span>
+            <span className="text-amber-400 text-xs font-medium">Encontre sua barbearia aqui</span>
           </div>
           <h1 className="text-4xl sm:text-5xl font-extrabold text-white leading-tight">
             Seu próximo corte está<br />
@@ -143,16 +181,6 @@ export default function ExplorePage() {
             </div>
           </>
         )}
-      </div>
-
-      {/* Footer CTA */}
-      <div className="border-t border-zinc-800 py-8 text-center">
-        <p className="text-zinc-600 text-sm">
-          Você é barbeiro?{' '}
-          <a href="/register" className="text-amber-400 hover:text-amber-300 font-medium">
-            Cadastre sua barbearia grátis →
-          </a>
-        </p>
       </div>
     </div>
   )
