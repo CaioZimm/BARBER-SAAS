@@ -10,33 +10,102 @@ model Tenant {
   id         String   @id @default(uuid())
   name       String
   slug       String   @unique
-  active     Boolean  @default(true)
-  created_at DateTime @default(now())
-  updated_at DateTime @updatedAt
+  active      Boolean  @default(true)
+  logo        String?
+  photos      String[]
+  description String?
+  phone       String?
+  address     String?
+  created_at  DateTime @default(now())
+  updated_at  DateTime @updatedAt
 
   users        User[]
   customers    Customer[]
   services     Service[]
   appointments Appointment[]
+  subscription Subscription?
 
   @@map("tenants")
 }
 
+model Plan {
+  id          String   @id @default(uuid())
+  name        String
+  price       Decimal  @db.Decimal(10, 2)
+  max_barbers Int      @default(1)
+  active      Boolean  @default(true)
+  created_at  DateTime @default(now())
+  updated_at  DateTime @updatedAt
+
+  subscriptions Subscription[]
+
+  @@map("plans")
+}
+
+model Subscription {
+  id                 String             @id @default(uuid())
+  tenant_id          String             @unique
+  plan_id            String
+  status             SubscriptionStatus @default(ACTIVE)
+  current_period_end DateTime
+  created_at         DateTime           @default(now())
+  updated_at         DateTime           @updatedAt
+
+  tenant Tenant @relation(fields: [tenant_id], references: [id], onDelete: Cascade)
+  plan   Plan   @relation(fields: [plan_id], references: [id], onDelete: Restrict)
+
+  @@map("subscriptions")
+}
+
+model Payment {
+  id             String        @id @default(uuid())
+  tenant_id      String
+  amount         Decimal       @db.Decimal(10, 2)
+  status         PaymentStatus @default(PENDING)
+  provider_id    String?       // Stripe/MercadoPago ID
+  payment_method String?       // credit_card, pix, boleto
+  created_at     DateTime      @default(now())
+  updated_at     DateTime      @updatedAt
+
+  @@map("payments")
+}
+
+enum SubscriptionStatus {
+  TRIAL
+  ACTIVE
+  PAST_DUE
+  CANCELED
+}
+
+enum PaymentStatus {
+  PENDING
+  PAID
+  FAILED
+  REFUNDED
+}
+
 model User {
   id            String   @id @default(uuid())
-  tenant_id     String
+  tenant_id     String?
   name          String
   email         String   @unique
+  phone         String?
   password_hash String
-  role          Role     @default(BARBER)
-  created_at    DateTime @default(now())
-  updated_at    DateTime @updatedAt
+  role             Role     @default(BARBER)
+  commission_rate  Decimal? @db.Decimal(5, 2)
+  photo            String?
+  bio              String?
+  is_active_barber Boolean  @default(true)
+  created_at       DateTime @default(now())
+  updated_at       DateTime @updatedAt
 
-  tenant           Tenant            @relation(fields: [tenant_id], references: [id], onDelete: Cascade)
+  tenant           Tenant?           @relation(fields: [tenant_id], references: [id], onDelete: Cascade)
   appointments     Appointment[]
   working_hours    WorkingHours[]
   blocked_schedule BlockedSchedule[]
   refresh_tokens   RefreshToken[]
+  services         Service[]         @relation("BarberServices")
+  customers_linked Customer[]
 
   @@map("users")
 }
@@ -44,6 +113,7 @@ model User {
 model Customer {
   id         String   @id @default(uuid())
   tenant_id  String
+  user_id    String?
   name       String
   phone      String
   email      String?
@@ -52,6 +122,7 @@ model Customer {
   updated_at DateTime @updatedAt
 
   tenant       Tenant        @relation(fields: [tenant_id], references: [id], onDelete: Cascade)
+  user         User?         @relation(fields: [user_id], references: [id], onDelete: SetNull)
   appointments Appointment[]
 
   @@map("customers")
@@ -63,12 +134,14 @@ model Service {
   name        String
   price       Decimal  @db.Decimal(10, 2)
   duration    Int      // duration in minutes
+  photos      String[] @default([])
   active      Boolean  @default(true)
   created_at  DateTime @default(now())
   updated_at  DateTime @updatedAt
 
   tenant       Tenant        @relation(fields: [tenant_id], references: [id], onDelete: Cascade)
   appointments Appointment[]
+  barbers      User[]        @relation("BarberServices")
 
   @@map("services")
 }
@@ -110,6 +183,8 @@ model Appointment {
   service_id String
   start_date DateTime
   end_date   DateTime
+  price             Decimal           @db.Decimal(10, 2) @default(0)
+  commission_amount Decimal?          @db.Decimal(10, 2)
   status     AppointmentStatus @default(SCHEDULED)
   created_at DateTime          @default(now())
   updated_at DateTime          @updatedAt
@@ -134,6 +209,7 @@ model WhatsAppSession {
 }
 
 enum Role {
+  SUPER_ADMIN
   ADMIN
   BARBER
   CLIENT
