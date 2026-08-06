@@ -2,13 +2,22 @@ export interface Tenant {
   id: string
   name: string
   slug: string
+  active?: boolean
+  logo?: string
+  photos?: string[]
+  description?: string
+  phone?: string
+  address?: string
 }
 
 export interface User {
   id: string
   name: string
   email: string
+  phone?: string
+  photo?: string
   role: string
+  bio?: string
   tenant: Tenant
 }
 
@@ -18,6 +27,9 @@ export interface Customer {
   phone: string
   email?: string
   notes?: string
+  user_id?: string
+  last_visit?: string
+  total_appointments?: number
 }
 
 export interface Service {
@@ -25,6 +37,7 @@ export interface Service {
   name: string
   price: string | number
   duration: number
+  photos?: string[]
   active: boolean
 }
 
@@ -37,6 +50,8 @@ export interface Appointment {
   status: 'SCHEDULED' | 'COMPLETED' | 'CANCELED' | 'NO_SHOW'
   customer: Customer
   service: Service
+  user?: User
+  tenant?: Tenant
 }
 
 export interface WorkingHour {
@@ -84,6 +99,7 @@ export interface ServiceFormData {
   name: string
   price: string | number
   duration: string | number
+  photos?: string[]
   active: boolean
 }
 
@@ -117,7 +133,8 @@ export interface LoginFormData {
 export interface RegisterFormData {
   name: string
   email: string
-  password?: string
+  phone: string
+  password: string
   tenantName: string
   tenantSlug: string
 }

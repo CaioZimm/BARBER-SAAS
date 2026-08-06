@@ -1,13 +1,14 @@
-import { createContext, useState, useEffect } from 'react'
-import type { ReactNode } from 'react'
-import { authService } from '../services/authService'
 import type { User, RegisterFormData } from '../interfaces'
+import { createContext, useState, useEffect } from 'react'
+import { authService } from '../services/authService'
+import type { ReactNode } from 'react'
 
 interface AuthContextType {
   user: User | null
   token: string | null
   login: (email: string, password: string) => Promise<void>
   register: (data: RegisterFormData) => Promise<void>
+  registerClient: (data: { name: string; email: string; phone: string; password: string }) => Promise<void>
   logout: () => void
   isLoading: boolean
 }
@@ -52,6 +53,14 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     setUser({ ...data.user, ...(data.tenant ? { tenant: data.tenant } : {}) })
   }
 
+  const registerClient = async (formData: { name: string; email: string; phone: string; password: string }) => {
+    const data = await authService.registerClient(formData)
+    localStorage.setItem('@barber:token', data.token)
+    if (data.refreshToken) localStorage.setItem('@barber:refreshToken', data.refreshToken)
+    setToken(data.token)
+    setUser(data.user)
+  }
+
   const logout = () => {
     localStorage.removeItem('@barber:token')
     localStorage.removeItem('@barber:refreshToken')
@@ -60,7 +69,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   }
 
   return (
-    <AuthContext.Provider value={{ user, token, login, register, logout, isLoading }}>
+    <AuthContext.Provider value={{ user, token, login, register, registerClient, logout, isLoading }}>
       {children}
     </AuthContext.Provider>
   )

@@ -9,6 +9,9 @@ import Input from '../../components/ui/Input'
 export default function LoginPage() {
   const { login } = useAuth()
   const navigate = useNavigate()
+  const searchParams = new URLSearchParams(window.location.search)
+  const returnTo = searchParams.get('returnTo')
+
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
   const [error, setError] = useState('')
@@ -20,7 +23,11 @@ export default function LoginPage() {
     setIsLoading(true)
     try {
       await login(email, password)
-      navigate('/dashboard')
+      if (returnTo) {
+        navigate(returnTo)
+      } else {
+        navigate('/dashboard')
+      }
     } catch (err: any) {
       setError(err?.response?.data?.error || 'Erro ao fazer login. Tente novamente.')
     } finally {
@@ -36,7 +43,7 @@ export default function LoginPage() {
           <div className="w-9 h-9 bg-amber-500 rounded-xl flex items-center justify-center">
             <Scissors size={18} className="text-white" />
           </div>
-          <span className="text-xl font-bold text-white">Barbearia</span>
+          <span className="text-xl font-bold text-white">Barbearia App</span>
         </div>
 
         <div className="space-y-6">
@@ -59,7 +66,7 @@ export default function LoginPage() {
           </div>
         </div>
 
-        <p className="text-zinc-600 text-sm">© 2026 SaaS. Todos os direitos reservados.</p>
+        <p className="text-zinc-600 text-sm">© 2026 Barbearia App. Todos os direitos reservados.</p>
       </div>
 
       {/* Right Panel - Form */}
@@ -115,8 +122,8 @@ export default function LoginPage() {
 
           <p className="text-center text-sm text-zinc-500">
             Não tem conta?{' '}
-            <Link to="/register" className="text-amber-400 hover:text-amber-300 font-medium underline">
-              Cadastre-se grátis
+            <Link to={returnTo ? `/register?returnTo=${encodeURIComponent(returnTo)}` : "/register"} className="text-amber-400 hover:text-amber-300 font-medium underline">
+              Cadastre-se
             </Link>
           </p>
         </div>

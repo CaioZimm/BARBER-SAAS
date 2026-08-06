@@ -2,7 +2,7 @@ import { Navigate, Outlet } from 'react-router-dom'
 import { useAuth } from '../hooks/useAuth'
 
 export function PrivateRoutes() {
-  const { token, isLoading } = useAuth()
+  const { token, user, isLoading } = useAuth()
 
   if (isLoading) {
     return (
@@ -14,6 +14,10 @@ export function PrivateRoutes() {
 
   if (!token) {
     return <Navigate to="/login" replace />
+  }
+
+  if (user?.role === 'CLIENT') {
+    return <Navigate to="/explore" replace />
   }
 
   return <Outlet />

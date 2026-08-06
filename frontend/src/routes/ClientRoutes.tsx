@@ -1,7 +1,7 @@
 import { Navigate, Outlet } from 'react-router-dom'
 import { useAuth } from '../hooks/useAuth'
 
-export function GuestRoutes() {
+export function ClientRoutes() {
   const { token, user, isLoading } = useAuth()
 
   if (isLoading) {
@@ -12,8 +12,11 @@ export function GuestRoutes() {
     )
   }
 
-  if (token && user) {
-    if (user.role === 'CLIENT') return <Navigate to="/explore" replace />
+  if (!token) {
+    return <Navigate to="/login" replace />
+  }
+
+  if (user?.role !== 'CLIENT') {
     return <Navigate to="/dashboard" replace />
   }
 
