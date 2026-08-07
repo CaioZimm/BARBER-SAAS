@@ -1,20 +1,22 @@
 import { useState, useEffect } from 'react'
 import { format, parseISO } from 'date-fns'
 import { ptBR } from 'date-fns/locale'
-import { Scissors, Clock, Calendar, CheckCircle, User } from 'lucide-react'
+import { Scissors, CheckCircle, Clock, User, Calendar, MapPin, Building } from 'lucide-react'
 import { appointmentsService } from '../../services/appointmentsService'
 import { publicService } from '../../services/publicService'
 import Button from '../../components/ui/Button'
 import { formatCurrency } from '../../utils'
 import { useAuth } from '../../hooks/useAuth'
-import { useNavigate } from 'react-router-dom'
+import { useNavigate, useParams } from 'react-router-dom'
+import { useQueryClient } from '@tanstack/react-query'
 
 type Step = 'barber' | 'service' | 'datetime' | 'info' | 'success'
 
 export default function PublicBookingPage() {
+  const { slug } = useParams()
   const { user } = useAuth()
   const navigate = useNavigate()
-  const slug = window.location.pathname.split('/')[2]
+  const queryClient = useQueryClient()
   const [tenant, setTenant] = useState<any>(null)
   const [slots, setSlots] = useState<string[]>([])
   const [step, setStep] = useState<Step>('barber')
@@ -50,6 +52,7 @@ export default function PublicBookingPage() {
         barberId: selectedBarber.id,
         startDate: selectedSlot,
       })
+      queryClient.invalidateQueries({ queryKey: ['my-appointments'] })
       setStep('success')
     } catch (e: any) {
       setError(e?.response?.data?.error || 'Erro ao agendar')
@@ -94,15 +97,28 @@ export default function PublicBookingPage() {
   return (
     <div className="min-h-screen bg-zinc-950">
       {/* Header */}
-      <div className="border-b border-zinc-800 p-5">
-        <div className="max-w-lg mx-auto flex items-center gap-3">
-          <div className="w-9 h-9 bg-amber-500 rounded-xl flex items-center justify-center">
-            <Scissors size={18} className="text-white" />
+      <div className="border-b border-zinc-800 bg-zinc-900/50">
+        <div className="max-w-lg mx-auto p-6">
+          <div className="flex items-center gap-4">
+            <div className="w-16 h-16 bg-zinc-800 rounded-2xl flex items-center justify-center overflow-hidden border border-zinc-700 shrink-0">
+              {tenant?.logo ? (
+                <img src={tenant.logo} alt={tenant.name} className="w-full h-full object-cover" />
+              ) : (
+                <Building size={24} className="text-amber-500/50" />
+              )}
+            </div>
+            <div>
+              <h1 className="text-xl font-bold text-white">{tenant?.name || 'Carregando...'}</h1>
+              {tenant?.address ? (
+                <p className="text-xs text-zinc-400 mt-1 flex items-center gap-1"><MapPin size={12} /> {tenant.address}</p>
+              ) : (
+                <p className="text-xs text-zinc-500 mt-1">Agendamento Online</p>
+              )}
+            </div>
           </div>
-          <div>
-            <h1 className="text-base font-bold text-white">{tenant?.name || 'Carregando...'}</h1>
-            <p className="text-xs text-zinc-500">Agendamento Online</p>
-          </div>
+          {tenant?.description && (
+            <p className="text-sm text-zinc-400 mt-4 leading-relaxed">{tenant.description}</p>
+          )}
         </div>
       </div>
 

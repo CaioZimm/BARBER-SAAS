@@ -132,9 +132,13 @@ export default function CustomersPage() {
               <Card key={c.id} className="space-y-3 cursor-pointer hover:border-zinc-700 transition-colors" onClick={() => setDetailsCustomer(c)}>
                 <div className="flex items-start justify-between">
                   <div className="flex items-center gap-3">
-                    <div className="w-10 h-10 rounded-full bg-amber-500/10 text-amber-400 flex items-center justify-center font-bold text-sm shrink-0">
-                      {c.name.charAt(0).toUpperCase()}
-                    </div>
+                    {c.user?.photo ? (
+                      <img src={c.user.photo} alt={c.name} className="w-10 h-10 rounded-full object-cover shrink-0" />
+                    ) : (
+                      <div className="w-10 h-10 rounded-full bg-amber-500/10 text-amber-400 flex items-center justify-center font-bold text-sm shrink-0">
+                        {c.name.charAt(0).toUpperCase()}
+                      </div>
+                    )}
                     <div>
                       <p className="font-semibold text-white flex items-center gap-2">
                         {c.name}
@@ -185,15 +189,19 @@ export default function CustomersPage() {
           {detailsCustomer && (
             <div className="space-y-6">
               <div className="flex items-center gap-4">
-                <div className="w-16 h-16 rounded-full bg-amber-500/10 text-amber-400 flex items-center justify-center font-bold text-xl shrink-0 border border-amber-500/20">
-                  {detailsCustomer.name.charAt(0).toUpperCase()}
-                </div>
+                {detailsCustomer.user?.photo ? (
+                  <img src={detailsCustomer.user.photo} alt={detailsCustomer.name} className="w-16 h-16 rounded-full object-cover shrink-0 border border-amber-500/20" />
+                ) : (
+                  <div className="w-16 h-16 rounded-full bg-amber-500/10 text-amber-400 flex items-center justify-center font-bold text-xl shrink-0 border border-amber-500/20">
+                    {detailsCustomer.name.charAt(0).toUpperCase()}
+                  </div>
+                )}
                 <div>
                   <h3 className="text-lg font-bold text-white flex items-center gap-2">
                     {detailsCustomer.name}
                     {detailsCustomer.user_id && (
                       <span className="px-2 py-0.5 rounded text-[10px] uppercase font-bold bg-amber-500/20 text-amber-400">
-                        App User
+                        Cliente
                       </span>
                     )}
                   </h3>

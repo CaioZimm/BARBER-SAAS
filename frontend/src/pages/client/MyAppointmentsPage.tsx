@@ -13,6 +13,7 @@ import Button from '../../components/ui/Button'
 import { applyPhoneMask } from '../../utils'
 import api from '../../lib/axios'
 import toast from 'react-hot-toast'
+import StatusBadge from '../../components/ui/StatusBadge'
 
 export default function MyAppointmentsPage() {
   const navigate = useNavigate()
@@ -62,6 +63,15 @@ export default function MyAppointmentsPage() {
       alert('Perfil atualizado com sucesso!')
     },
     onError: (err: any) => alert(err.response?.data?.error || 'Erro ao atualizar perfil')
+  })
+
+  const cancelAppointmentMutation = useMutation({
+    mutationFn: (id: string) => appointmentsService.cancelAppointment(id),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['my-appointments'] })
+      toast.success('Agendamento cancelado com sucesso!')
+    },
+    onError: (err: any) => toast.error(err.response?.data?.error || 'Erro ao cancelar agendamento')
   })
 
   return (
@@ -115,6 +125,7 @@ export default function MyAppointmentsPage() {
             {appointments?.map((apt: any) => {
               const date = parseISO(apt.start_date)
               const isPast = date < new Date()
+              const hasFutureAppointmentForTenant = appointments.some((a: any) => a.tenant.id === apt.tenant.id && a.status === 'SCHEDULED' && parseISO(a.start_date) > new Date())
               return (
                 <div key={apt.id} className={`p-6 rounded-2xl border ${isPast ? 'border-zinc-800' : 'border-amber-500'}`}>
                   <div className="flex flex-col sm:flex-row justify-between sm:items-center gap-4 mb-4">
@@ -124,8 +135,29 @@ export default function MyAppointmentsPage() {
                         <MapPin size={14} /> barbearia/{apt.tenant.slug}
                       </p>
                     </div>
-                    <div className={isPast ? 'px-3 py-1 rounded-full text-xs font-medium self-start sm:self-auto' : 'px-3 py-1 rounded-full text-xs font-medium self-start sm:self-auto'}>
-                      {isPast ? 'Realizado' : 'Agendado'}
+                    <div className="self-start sm:self-auto flex items-center gap-3">
+                      <StatusBadge status={apt.status} />
+                      {apt.status === 'SCHEDULED' && !isPast && (
+                        <button
+                          onClick={() => {
+                            if (window.confirm('Deseja realmente cancelar este agendamento?')) {
+                              cancelAppointmentMutation.mutate(apt.id)
+                            }
+                          }}
+                          disabled={cancelAppointmentMutation.isPending}
+                          className="text-xs text-red-400 hover:text-red-300 border border-red-400/20 px-3 py-1 rounded-full transition-colors disabled:opacity-50"
+                        >
+                          Cancelar
+                        </button>
+                      )}
+                      {apt.status === 'CANCELED' && !hasFutureAppointmentForTenant && (
+                        <button
+                          onClick={() => navigate(`/booking/${apt.tenant.slug}`)}
+                          className="text-xs text-amber-400 hover:text-amber-300 border border-amber-400/20 bg-amber-400/10 px-3 py-1 rounded-full transition-colors"
+                        >
+                          Reagendar
+                        </button>
+                      )}
                     </div>
                   </div>
 
@@ -153,8 +185,12 @@ export default function MyAppointmentsPage() {
                     </div>
 
                     <div className="flex items-center gap-3">
-                      <div className="w-10 h-10 rounded-lg bg-zinc-800 flex items-center justify-center">
-                        <span className="text-zinc-400 text-xs font-bold">{apt.user.name.slice(0, 2).toUpperCase()}</span>
+                      <div className="w-10 h-10 rounded-lg bg-zinc-800 flex items-center justify-center overflow-hidden">
+                        {apt.user.photo ? (
+                          <img src={apt.user.photo} alt={apt.user.name} className="w-full h-full object-cover" />
+                        ) : (
+                          <span className="text-zinc-400 text-xs font-bold">{apt.user.name.slice(0, 2).toUpperCase()}</span>
+                        )}
                       </div>
                       <div>
                         <p className="text-xs text-zinc-500">Profissional</p>

@@ -136,8 +136,12 @@ export default function ExplorePage() {
                   >
                     {/* Card header gradient */}
                     <div className={`h-24 bg-gradient-to-br ${from} ${to} flex items-center justify-center relative`}>
-                      <div className="w-14 h-14 rounded-2xl bg-zinc-900/80 backdrop-blur-sm border border-zinc-700 flex items-center justify-center text-white font-bold text-xl shadow-lg">
-                        {getAvatar(shop.name)}
+                      <div className="w-14 h-14 rounded-2xl bg-zinc-900/80 backdrop-blur-sm border border-zinc-700 flex items-center justify-center text-white font-bold text-xl shadow-lg overflow-hidden">
+                        {(shop as any).logo ? (
+                          <img src={(shop as any).logo} alt={shop.name} className="w-full h-full object-cover" />
+                        ) : (
+                          getAvatar(shop.name)
+                        )}
                       </div>
                     </div>
 
@@ -148,8 +152,8 @@ export default function ExplorePage() {
                           <h3 className="font-bold text-white text-base group-hover:text-amber-400 transition-colors leading-tight">
                             {shop.name}
                           </h3>
-                          <p className="text-xs text-zinc-500 mt-0.5 flex items-center gap-1">
-                            <MapPin size={11} /> @{shop.slug}
+                          <p className="text-xs text-zinc-500 mt-0.5 flex items-center gap-1 line-clamp-1">
+                            <MapPin size={11} /> {(shop as any).address ? (shop as any).address : `@${shop.slug}`}
                           </p>
                         </div>
                         <ChevronRight size={18} className="text-zinc-600 group-hover:text-amber-400 transition-colors shrink-0 mt-0.5" />
