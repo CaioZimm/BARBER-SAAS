@@ -10,6 +10,10 @@ export const registerSchema = z.object({
     .string()
     .min(2)
     .regex(/^[a-z0-9-]+$/, 'Slug deve conter apenas letras minúsculas, números e hífens'),
+  tenantPhone: z.string().optional(),
+  tenantAddress: z.string().optional(),
+  tenantDescription: z.string().optional(),
+  tenantLogo: z.string().optional(),
 })
 
 export const loginSchema = z.object({

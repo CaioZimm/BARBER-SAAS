@@ -32,7 +32,6 @@ export class SubscriptionController {
       })
 
       if (!subscription) {
-        // Se não tiver assinatura, retorna null ou uma resposta padrão
         res.json({ subscription: null })
         return
       }
@@ -59,7 +58,6 @@ export class SubscriptionController {
         return
       }
 
-      // Upsert: Cria ou atualiza a assinatura para ACTIVE e coloca validade para 1 mês
       const current_period_end = new Date()
       current_period_end.setMonth(current_period_end.getMonth() + 1)
 
@@ -79,7 +77,6 @@ export class SubscriptionController {
         include: { plan: true }
       })
 
-      // Simular pagamento (criar registro)
       await prisma.payment.create({
         data: {
           tenant_id: user.tenantId,
@@ -89,7 +86,7 @@ export class SubscriptionController {
         }
       })
 
-      res.json({ message: 'Assinatura realizada com sucesso (Simulação)', subscription })
+      res.json({ message: 'Assinatura realizada com sucesso', subscription })
     } catch (error: any) {
       res.status(500).json({ error: 'Erro ao assinar plano', details: error.message })
     }

@@ -25,6 +25,10 @@ export class AuthService {
       data: {
         name: data.tenantName,
         slug: data.tenantSlug,
+        phone: data.tenantPhone,
+        address: data.tenantAddress,
+        description: data.tenantDescription,
+        logo: data.tenantLogo,
         users: {
           create: {
             name: data.name,
@@ -103,7 +107,7 @@ export class AuthService {
   async me(userId: string) {
     const user = await userRepository.findUnique({
       where: { id: userId },
-      select: { id: true, name: true, email: true, role: true, tenant: { select: { id: true, name: true, slug: true } } },
+      select: { id: true, name: true, email: true, phone: true, photo: true, bio: true, role: true, tenant: { select: { id: true, name: true, slug: true } } },
     })
     if (!user) throw new AppError('Usuário não encontrado', 404)
     return user
