@@ -28,6 +28,7 @@ export interface Customer {
   email?: string
   notes?: string
   user_id?: string
+  user?: { photo?: string }
   last_visit?: string
   total_appointments?: number
 }
@@ -137,4 +138,7 @@ export interface RegisterFormData {
   password: string
   tenantName: string
   tenantSlug: string
+  tenantPhone?: string
+  tenantAddress?: string
+  tenantDescription?: string
 }

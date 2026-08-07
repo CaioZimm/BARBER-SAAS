@@ -98,7 +98,7 @@ export default function Sidebar() {
           </div>
           <button
             onClick={handleLogout}
-            className="p-2 rounded-md text-red-300 hover:text-red-100 hover:bg-red-600/50 transition-colors cursor-pointer bg-red-500/40 "
+            className="p-2 rounded-md text-red-300 hover:text-red-100 hover:bg-red-800 transition-colors cursor-pointer bg-red-500/40"
             title="Sair"
           >
             <LogOut size={16} />

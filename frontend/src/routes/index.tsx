@@ -1,7 +1,5 @@
 import { Routes, Route, Navigate } from 'react-router-dom'
-import { PrivateRoutes } from './PrivateRoutes'
-import { ClientRoutes } from './ClientRoutes'
-import { GuestRoutes } from './GuestRoutes'
+import { PrivateRoutes, ClientRoutes, GuestRoutes } from './RouteGuards'
 
 // Páginas Públicas/Clientes
 import PublicBookingPage from '../pages/public/PublicBookingPage'
@@ -30,7 +28,7 @@ export function AppRoutes() {
       <Route path="/barbearia/:slug" element={<BarbershopPage />} />
       <Route path="/booking/:slug" element={<PublicBookingPage />} />
 
-      {/* Rotas de Autenticação (Apenas Deslogados) */}
+      {/* Rotas de Autenticação (Deslogados) */}
       <Route element={<GuestRoutes />}>
         <Route path="/login" element={<LoginPage />} />
         <Route path="/register" element={<RegisterPage />} />
