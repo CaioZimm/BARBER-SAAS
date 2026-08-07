@@ -15,6 +15,7 @@ export class CustomerRepository {
       orderBy: { created_at: 'desc' },
       include: {
         _count: { select: { appointments: true } },
+        user: { select: { photo: true } },
         appointments: {
           orderBy: { start_date: 'desc' },
           take: 1,
@@ -50,6 +51,7 @@ export class CustomerRepository {
     return prisma.customer.findFirst({
       where: { id, tenant_id: tenantId },
       include: {
+        user: { select: { photo: true } },
         appointments: {
           orderBy: { start_date: 'desc' },
           take: 5,

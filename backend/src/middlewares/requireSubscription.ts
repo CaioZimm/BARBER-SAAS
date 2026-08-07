@@ -10,7 +10,6 @@ export const requireSubscription = async (req: AuthRequest, res: Response, next:
     return
   }
 
-  // Se for super admin ou cliente, pode ignorar a checagem de assinatura
   if (user.role === 'SUPER_ADMIN' || user.role === 'CLIENT') {
     next()
     return
@@ -32,14 +31,10 @@ export const requireSubscription = async (req: AuthRequest, res: Response, next:
       return
     }
 
-    // Para o MVP (Simulação), se não tiver assinatura ou se não estiver ACTIVE/TRIAL, vamos permitir 
-    // ou podemos bloquear. Vamos bloquear se a assinatura existir e for PAST_DUE/CANCELED
-    // Se não tiver assinatura nenhuma, permitiremos acesso de "graça" por enquanto ou forçamos a criação.
-    // Como a spec pede "bloquear acesso ao painel caso assinatura expire":
     if (tenant.subscription) {
       if (tenant.subscription.status === 'CANCELED' || tenant.subscription.status === 'PAST_DUE') {
-         res.status(402).json({ error: 'Payment Required. Subscription is inactive.' })
-         return
+        res.status(402).json({ error: 'Payment Required. Subscription is inactive.' })
+        return
       }
     }
 

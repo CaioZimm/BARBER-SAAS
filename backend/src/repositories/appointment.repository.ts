@@ -29,7 +29,7 @@ export class AppointmentRepository {
     
     return prisma.appointment.findMany({
       where,
-      include: { customer: true, service: true },
+      include: { customer: { include: { user: { select: { photo: true } } } }, service: true },
       orderBy: { start_date: 'asc' },
     })
   }
@@ -37,14 +37,14 @@ export class AppointmentRepository {
   async findById(tenantId: string, id: string) {
     return prisma.appointment.findFirst({
       where: { id, tenant_id: tenantId },
-      include: { customer: true, service: true, user: { select: { id: true, name: true } } },
+      include: { customer: { include: { user: { select: { photo: true } } } }, service: true, user: { select: { id: true, name: true } } },
     })
   }
 
   async findDashboardStats(tenantId: string, userId: string, startOfToday: Date, endOfToday: Date, sevenDaysAgo: Date) {
     const todayAppointments = await prisma.appointment.findMany({
       where: { tenant_id: tenantId, user_id: userId, start_date: { gte: startOfToday, lte: endOfToday } },
-      include: { customer: true, service: true },
+      include: { customer: { include: { user: { select: { photo: true } } } }, service: true },
       orderBy: { start_date: 'asc' },
     })
 
@@ -64,7 +64,7 @@ export class AppointmentRepository {
   async create(data: Prisma.AppointmentUncheckedCreateInput) {
     return prisma.appointment.create({
       data,
-      include: { customer: true, service: true },
+      include: { customer: { include: { user: { select: { photo: true } } } }, service: true },
     })
   }
 
@@ -75,7 +75,7 @@ export class AppointmentRepository {
     return prisma.appointment.update({
       where: { id },
       data,
-      include: { customer: true, service: true },
+      include: { customer: { include: { user: { select: { photo: true } } } }, service: true },
     })
   }
 

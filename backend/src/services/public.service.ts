@@ -17,6 +17,10 @@ export class PublicService {
         id: true,
         name: true,
         slug: true,
+        logo: true,
+        address: true,
+        description: true,
+        phone: true,
         created_at: true,
         _count: {
           select: { services: true },
@@ -39,6 +43,10 @@ export class PublicService {
         id: true,
         name: true,
         slug: true,
+        logo: true,
+        address: true,
+        description: true,
+        phone: true,
         services: {
           where: { active: true },
           select: { id: true, name: true, price: true, duration: true, photos: true },

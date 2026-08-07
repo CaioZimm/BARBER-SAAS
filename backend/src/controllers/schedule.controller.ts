@@ -23,7 +23,8 @@ export class ScheduleController {
 
   async listBlockedSchedules(req: AuthRequest, res: Response, next: NextFunction) {
     try {
-      const blocks = await scheduleService.listBlockedSchedules(req.user!.id)
+      const isAdmin = req.user!.role === 'ADMIN' || req.user!.role === 'SUPER_ADMIN'
+      const blocks = await scheduleService.listBlockedSchedules(req.user!.id, isAdmin ? req.user!.tenantId : undefined)
       res.json(blocks)
     } catch (err) { next(err) }
   }
@@ -31,14 +32,16 @@ export class ScheduleController {
   async createBlockedSchedule(req: AuthRequest, res: Response, next: NextFunction) {
     try {
       const data = createBlockedScheduleSchema.parse(req.body)
-      const block = await scheduleService.createBlockedSchedule(req.user!.id, data)
+      const isAdmin = req.user!.role === 'ADMIN' || req.user!.role === 'SUPER_ADMIN'
+      const targetUserId = (isAdmin && data.userId) ? data.userId : req.user!.id
+      const block = await scheduleService.createBlockedSchedule(targetUserId, data)
       res.status(201).json(block)
     } catch (err) { next(err) }
   }
 
   async deleteBlockedSchedule(req: AuthRequest, res: Response, next: NextFunction) {
     try {
-      await scheduleService.deleteBlockedSchedule(req.user!.id, req.params.id as string)
+      await scheduleService.deleteBlockedSchedule(req.user!.id, req.params.id as string, req.user!.role)
       res.status(204).send()
     } catch (err) { next(err) }
   }

@@ -107,6 +107,26 @@ export class AppointmentService {
     return appointment
   }
 
+  async clientCancel(userId: string, id: string) {
+    // First, find the appointment to make sure it belongs to this client
+    const appointment = await prisma.appointment.findFirst({
+      where: {
+        id,
+        customer: {
+          user_id: userId
+        }
+      }
+    })
+    if (!appointment) throw new AppError('Agendamento não encontrado', 404)
+    
+    // Update status to CANCELED
+    const updated = await prisma.appointment.update({
+      where: { id },
+      data: { status: 'CANCELED' }
+    })
+    return updated
+  }
+
   /** Retorna os horários disponíveis para um dia específico (usado no painel público) */
   async getAvailableSlots(tenantSlug: string, date: string, barberId: string) {
     const tenant = await prisma.tenant.findUnique({ where: { slug: tenantSlug } })
@@ -148,17 +168,18 @@ export class AppointmentService {
     while (current < dayEnd) {
       const slotEnd = addMinutes(current, 30)
       const isBusy = appointments.some((a) =>
-        isWithinInterval(current, { start: a.start_date, end: a.end_date })
+        current < new Date(a.end_date) && slotEnd > new Date(a.start_date)
       )
       const isBlocked = blocked.some((b) =>
-        isWithinInterval(current, { start: b.start_date, end: b.end_date })
+        current < new Date(b.end_date) && slotEnd > new Date(b.start_date)
       )
       const isLunch =
         workingHours.lunch_start && workingHours.lunch_end
-          ? isWithinInterval(current, {
-              start: (() => { const d = new Date(day); const [h, m] = workingHours.lunch_start!.split(':').map(Number); d.setHours(h, m, 0, 0); return d })(),
-              end: (() => { const d = new Date(day); const [h, m] = workingHours.lunch_end!.split(':').map(Number); d.setHours(h, m, 0, 0); return d })(),
-            })
+          ? (() => {
+              const ls = new Date(day); const [h, m] = workingHours.lunch_start!.split(':').map(Number); ls.setHours(h, m, 0, 0);
+              const le = new Date(day); const [h2, m2] = workingHours.lunch_end!.split(':').map(Number); le.setHours(h2, m2, 0, 0);
+              return current < le && slotEnd > ls
+            })()
           : false
       const isPast = current < new Date()
 
@@ -246,7 +267,7 @@ export class AppointmentService {
       },
       include: {
         tenant: true,
-        user: { select: { id: true, name: true } },
+        user: { select: { id: true, name: true, photo: true } },
         service: true,
       },
       orderBy: { start_date: 'desc' }

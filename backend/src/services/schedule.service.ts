@@ -35,10 +35,18 @@ export class ScheduleService {
     })
   }
 
-  async listBlockedSchedules(userId: string) {
+  async listBlockedSchedules(userId: string, tenantId?: string) {
+    if (tenantId) {
+      return blockedScheduleRepository.findMany({
+        where: { user: { tenant_id: tenantId } },
+        orderBy: { start_date: 'asc' },
+        include: { user: { select: { id: true, name: true } } }
+      })
+    }
     return blockedScheduleRepository.findMany({
       where: { user_id: userId },
       orderBy: { start_date: 'asc' },
+      include: { user: { select: { id: true, name: true } } }
     })
   }
 
@@ -53,8 +61,9 @@ export class ScheduleService {
     })
   }
 
-  async deleteBlockedSchedule(userId: string, id: string) {
-    const block = await blockedScheduleRepository.findFirst({ where: { id, user_id: userId } })
+  async deleteBlockedSchedule(userId: string, id: string, role?: string) {
+    const isAdmin = role === 'ADMIN' || role === 'SUPER_ADMIN'
+    const block = await blockedScheduleRepository.findFirst({ where: isAdmin ? { id } : { id, user_id: userId } })
     if (!block) throw new AppError('Bloqueio não encontrado', 404)
     await blockedScheduleRepository.delete({ where: { id } })
   }

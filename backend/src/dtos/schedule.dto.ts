@@ -13,6 +13,7 @@ export const createBlockedScheduleSchema = z.object({
   startDate: z.string().datetime('Data/hora de início inválida'),
   endDate: z.string().datetime('Data/hora de fim inválida'),
   reason: z.string().optional(),
+  userId: z.string().uuid().optional(),
 })
 
 export type WorkingHoursDTO = z.infer<typeof workingHoursSchema>

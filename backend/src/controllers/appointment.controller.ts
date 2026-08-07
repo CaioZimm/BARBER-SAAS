@@ -56,7 +56,11 @@ export class AppointmentController {
 
   async cancel(req: AuthRequest, res: Response, next: NextFunction) {
     try {
-      await appointmentService.cancel(req.user!.tenantId!, req.params.id as string)
+      if (req.user!.role === 'CLIENT') {
+        await appointmentService.clientCancel(req.user!.id, req.params.id as string)
+      } else {
+        await appointmentService.cancel(req.user!.tenantId!, req.params.id as string)
+      }
       res.status(204).send()
     } catch (err) { next(err) }
   }
