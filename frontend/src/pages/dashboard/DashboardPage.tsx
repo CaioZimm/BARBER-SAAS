@@ -126,9 +126,13 @@ export default function DashboardPage() {
             {data?.nextAppointment ? (
               <Card className="border-amber-500/20 bg-gradient-to-br from-amber-500/5 to-transparent">
                 <div className="flex items-start gap-4">
-                  <div className="w-12 h-12 rounded-full bg-amber-500/20 flex items-center justify-center text-amber-400 text-lg font-bold shrink-0">
-                    {data.nextAppointment.customer.name.charAt(0)}
-                  </div>
+                  {data.nextAppointment.customer.user?.photo ? (
+                    <img src={data.nextAppointment.customer.user.photo} alt={data.nextAppointment.customer.name} className="w-12 h-12 rounded-full object-cover shrink-0" />
+                  ) : (
+                    <div className="w-12 h-12 rounded-full bg-amber-500/20 flex items-center justify-center text-amber-400 text-lg font-bold shrink-0">
+                      {data.nextAppointment.customer.name.charAt(0)}
+                    </div>
+                  )}
                   <div className="flex-1 min-w-0">
                     <p className="font-semibold text-white truncate">
                       {data.nextAppointment.customer.name}

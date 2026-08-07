@@ -16,6 +16,7 @@ import Button from '../../components/ui/Button'
 import Input from '../../components/ui/Input'
 import Modal from '../../components/ui/Modal'
 import { applyPhoneMask } from '../../utils'
+import { employeeService } from '../../services/employeeService'
 
 const DAYS = ['Domingo', 'Segunda', 'Terça', 'Quarta', 'Quinta', 'Sexta', 'Sábado']
 
@@ -30,11 +31,12 @@ export default function SettingsPage() {
   const [isUploadingPhoto, setIsUploadingPhoto] = useState(false)
 
   // Tenant State
-  const [tenantForm, setTenantForm] = useState({ name: '', slug: '' })
+  const [tenantForm, setTenantForm] = useState({ name: '', slug: '', logo: '', description: '', address: '', phone: '' })
+  const [isUploadingTenantLogo, setIsUploadingTenantLogo] = useState(false)
 
   // Schedule State
   const [blockModalOpen, setBlockModalOpen] = useState(false)
-  const [blockForm, setBlockForm] = useState({ startDate: '', endDate: '', reason: '' })
+  const [blockForm, setBlockForm] = useState({ startDate: '', endDate: '', reason: '', userId: '' })
   const [editingDay, setEditingDay] = useState<WorkingHour | null>(null)
   const [dayForm, setDayForm] = useState({ startTime: '09:00', endTime: '18:00', lunchStart: '12:00', lunchEnd: '13:00', active: true })
 
@@ -42,6 +44,13 @@ export default function SettingsPage() {
   const { data: currentUser } = useQuery<User>({
     queryKey: ['me'],
     queryFn: () => authService.me(),
+  })
+
+  const isAdmin = currentUser?.role === 'ADMIN' || currentUser?.role === 'SUPER_ADMIN'
+  const { data: employees = [] } = useQuery({
+    queryKey: ['employees'],
+    queryFn: () => employeeService.list(),
+    enabled: isAdmin,
   })
 
   const { data: currentTenant } = useQuery<Tenant>({
@@ -69,7 +78,14 @@ export default function SettingsPage() {
 
   useEffect(() => {
     if (currentTenant) {
-      setTenantForm({ name: currentTenant.name, slug: currentTenant.slug })
+      setTenantForm({ 
+        name: currentTenant.name, 
+        slug: currentTenant.slug,
+        logo: currentTenant.logo || '',
+        description: currentTenant.description || '',
+        address: currentTenant.address || '',
+        phone: currentTenant.phone || ''
+      })
     }
   }, [currentTenant])
 
@@ -128,11 +144,12 @@ export default function SettingsPage() {
         startDate: new Date(blockForm.startDate).toISOString(),
         endDate: new Date(blockForm.endDate).toISOString(),
         reason: blockForm.reason,
+        userId: blockForm.userId || undefined,
       }),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['blocked'] })
       setBlockModalOpen(false)
-      setBlockForm({ startDate: '', endDate: '', reason: '' })
+      setBlockForm({ startDate: '', endDate: '', reason: '', userId: '' })
     },
   })
 
@@ -151,8 +168,6 @@ export default function SettingsPage() {
       active: wh.active,
     })
   }
-
-  const isAdmin = user?.role === 'ADMIN' || user?.role === 'SUPER_ADMIN'
 
   return (
     <DashboardLayout>
@@ -200,9 +215,9 @@ export default function SettingsPage() {
                   <div className="absolute inset-0 bg-black/50 hidden group-hover:flex items-center justify-center pointer-events-none">
                     <UserIcon size={24} className="text-white" />
                   </div>
-                  <input 
-                    type="file" 
-                    accept="image/*" 
+                  <input
+                    type="file"
+                    accept="image/*"
                     onChange={async (e) => {
                       const file = e.target.files?.[0]
                       if (!file) return
@@ -250,9 +265,58 @@ export default function SettingsPage() {
         {activeTab === 'tenant' && isAdmin && (
           <div className="space-y-6">
             <Card className="space-y-4">
+              <div className="flex flex-col items-center gap-2 mb-4">
+                <div className="w-24 h-24 rounded-2xl bg-zinc-800 border-2 border-dashed border-zinc-700 flex items-center justify-center overflow-hidden relative group">
+                  {tenantForm.logo ? (
+                    <img src={tenantForm.logo} alt="Logo da Barbearia" className="w-full h-full object-cover" />
+                  ) : (
+                    <Building size={32} className="text-zinc-500" />
+                  )}
+                  <div className="absolute inset-0 bg-black/50 hidden group-hover:flex items-center justify-center pointer-events-none">
+                    <Building size={24} className="text-white" />
+                  </div>
+                  <input
+                    type="file"
+                    accept="image/*"
+                    onChange={async (e) => {
+                      const file = e.target.files?.[0]
+                      if (!file) return
+                      setIsUploadingTenantLogo(true)
+                      try {
+                        const formData = new FormData()
+                        formData.append('file', file)
+                        const res = await api.post('/upload', formData, { headers: { 'Content-Type': 'multipart/form-data' } })
+                        setTenantForm(f => ({ ...f, logo: res.data.url }))
+                        toast.success('Logo atualizada!')
+                      } catch {
+                        toast.error('Erro ao enviar logo')
+                      } finally {
+                        setIsUploadingTenantLogo(false)
+                      }
+                    }}
+                    className="absolute inset-0 w-full h-full opacity-0 cursor-pointer"
+                    disabled={isUploadingTenantLogo}
+                  />
+                </div>
+                <p className="text-xs text-zinc-500">{isUploadingTenantLogo ? 'Enviando...' : 'Alterar logo da barbearia'}</p>
+              </div>
+
               <Input label="Nome da Barbearia" value={tenantForm.name} onChange={e => setTenantForm(f => ({ ...f, name: e.target.value }))} />
-              <Input label="Link Público (Slug)" value={tenantForm.slug} onChange={e => setTenantForm(f => ({ ...f, slug: e.target.value }))} />
+              <Input label="Link Público" value={tenantForm.slug} onChange={e => setTenantForm(f => ({ ...f, slug: e.target.value }))} />
               <p className="text-xs text-zinc-500 mt-1">Seu link será: app.barbersaas.com/booking/{tenantForm.slug || 'seuslug'}</p>
+              
+              <Input label="Telefone / WhatsApp" value={tenantForm.phone} onChange={e => setTenantForm(f => ({ ...f, phone: applyPhoneMask(e.target.value) }))} maxLength={15} />
+              <Input label="Endereço" value={tenantForm.address} onChange={e => setTenantForm(f => ({ ...f, address: e.target.value }))} placeholder="Rua, Número, Bairro, Cidade" />
+              
+              <div>
+                <label className="text-sm font-medium text-zinc-300">Descrição (opcional)</label>
+                <textarea
+                  className="w-full mt-1.5 rounded-lg border border-zinc-700 bg-zinc-900 px-3 py-2 text-sm text-zinc-100 focus:outline-none focus:ring-2 focus:ring-amber-500 resize-none h-24"
+                  value={tenantForm.description}
+                  onChange={e => setTenantForm(f => ({ ...f, description: e.target.value }))}
+                  placeholder="Conte um pouco sobre sua barbearia"
+                />
+              </div>
 
               <div className="pt-2">
                 <Button isLoading={updateTenantMutation.isPending} onClick={() => updateTenantMutation.mutate()}>Salvar Barbearia</Button>
@@ -323,6 +387,9 @@ export default function SettingsPage() {
                         <p className="text-sm font-medium text-white">
                           {format(new Date(b.start_date), 'dd MMM', { locale: ptBR })} — {format(new Date(b.end_date), 'dd MMM yyyy', { locale: ptBR })}
                         </p>
+                        {isAdmin && b.user && (
+                          <p className="text-xs font-semibold text-amber-400 mt-1">Barbeiro: {b.user.name}</p>
+                        )}
                         {b.reason && <p className="text-xs text-zinc-500 mt-0.5">{b.reason}</p>}
                       </div>
                       <button
@@ -372,6 +439,23 @@ export default function SettingsPage() {
         {/* Block Modal */}
         <Modal isOpen={blockModalOpen} onClose={() => setBlockModalOpen(false)} title="Novo bloqueio">
           <div className="space-y-4">
+            {isAdmin && (
+              <div>
+                <label className="text-sm font-medium text-zinc-300">Barbeiro</label>
+                <select
+                  className="w-full mt-1.5 rounded-lg border border-zinc-700 bg-zinc-900 px-3 py-2 text-sm text-zinc-100 focus:outline-none focus:ring-2 focus:ring-amber-500"
+                  value={blockForm.userId}
+                  onChange={(e) => setBlockForm((f) => ({ ...f, userId: e.target.value }))}
+                >
+                  <option value="">Selecione o barbeiro</option>
+                  {employees.map((emp: any) => (
+                    <option key={emp.id} value={emp.id}>
+                      {emp.name}
+                    </option>
+                  ))}
+                </select>
+              </div>
+            )}
             <div className="grid grid-cols-2 gap-4">
               <Input id="block-start" type="datetime-local" label="Início *" value={blockForm.startDate} onChange={(e) => setBlockForm((f) => ({ ...f, startDate: e.target.value }))} />
               <Input id="block-end" type="datetime-local" label="Fim *" value={blockForm.endDate} onChange={(e) => setBlockForm((f) => ({ ...f, endDate: e.target.value }))} />

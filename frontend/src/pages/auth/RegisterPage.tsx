@@ -19,10 +19,10 @@ export default function RegisterPage() {
   const [isLoading, setIsLoading] = useState(false)
 
   const [form, setForm] = useState({
-    name: '', email: '', phone: '', password: '', confirm_password: '', tenantName: '', tenantSlug: '',
+    name: '', email: '', phone: '', password: '', confirm_password: '', tenantName: '', tenantSlug: '', tenantPhone: '', tenantAddress: '', tenantDescription: ''
   })
 
-  const handleChange = (field: string) => (e: React.ChangeEvent<HTMLInputElement>) => {
+  const handleChange = (field: string) => (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
     let value = e.target.value
     if (field === 'phone') value = applyPhoneMask(value)
     if (field === 'tenantSlug') value = value.toLowerCase().replace(/[^a-z0-9-]/g, '-')
@@ -32,7 +32,7 @@ export default function RegisterPage() {
   const handleNextStep = (e: FormEvent) => {
     e.preventDefault()
     setError('')
-    
+
     if (!form.name || !form.email || !form.phone || !form.password) {
       setError('Preencha todos os campos.')
       return
@@ -82,7 +82,10 @@ export default function RegisterPage() {
           phone: form.phone,
           password: form.password,
           tenantName: form.tenantName,
-          tenantSlug: form.tenantSlug
+          tenantSlug: form.tenantSlug,
+          tenantPhone: form.tenantPhone,
+          tenantAddress: form.tenantAddress,
+          tenantDescription: form.tenantDescription
         })
         navigate('/onboarding')
       }
@@ -229,15 +232,34 @@ export default function RegisterPage() {
                       className="space-y-4 pt-4 border-t border-zinc-800"
                     >
                       <p className="text-xs font-semibold text-zinc-500 uppercase tracking-wider">Nome do seu negócio</p>
-                      <Input id="tenantName" label="Nome da barbearia" placeholder="Barbearia do João"
+                      <Input id="tenantName" label="Nome da barbearia *" placeholder="Barbearia do João"
                         value={form.tenantName} onChange={handleChange('tenantName')} required />
-                      <Input id="tenantSlug" label="Link público" placeholder="barbearia-do-joao"
+                      <Input id="tenantSlug" label="Link público *" placeholder="barbearia-do-joao"
                         value={form.tenantSlug} onChange={handleChange('tenantSlug')} required />
                       {form.tenantSlug && (
                         <p className="text-xs text-zinc-500 -mt-2">
-                          Seu link: <span className="text-amber-400">barbersaas.com/{form.tenantSlug}</span>
+                          Seu link: <span className="text-amber-400">barbersaas.com/booking/{form.tenantSlug}</span>
                         </p>
                       )}
+
+                      <Input id="tenantPhone" label="Telefone / WhatsApp da Barbearia" placeholder="(00) 00000-0000"
+                        value={form.tenantPhone} onChange={(e) => {
+                          const val = applyPhoneMask(e.target.value)
+                          setForm((prev) => ({ ...prev, tenantPhone: val }))
+                        }} maxLength={15} />
+                      <Input id="tenantAddress" label="Endereço" placeholder="Rua, Número, Bairro, Cidade"
+                        value={form.tenantAddress} onChange={handleChange('tenantAddress')} />
+
+                      <div className="flex flex-col gap-1.5">
+                        <label htmlFor="tenantDescription" className="text-sm font-medium text-zinc-300">Descrição (Opcional)</label>
+                        <textarea
+                          id="tenantDescription"
+                          className="w-full rounded-lg border border-zinc-700 bg-zinc-900/50 px-3 py-2 text-sm text-zinc-100 placeholder:text-zinc-600 focus:outline-none focus:ring-2 focus:ring-amber-500 min-h-[80px] resize-none"
+                          placeholder="Conte um pouco sobre a sua barbearia..."
+                          value={form.tenantDescription}
+                          onChange={handleChange('tenantDescription')}
+                        />
+                      </div>
                     </motion.div>
                   )}
 

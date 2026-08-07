@@ -27,7 +27,7 @@ export default function AgendaPage() {
   const [newForm, setNewForm] = useState({ customerId: '', serviceId: '', barberId: '', date: format(new Date(), 'yyyy-MM-dd'), time: '09:00' })
   const [selectedBarber, setSelectedBarber] = useState('all')
   const { user } = useAuth()
-  const isAdmin = user?.role === 'ADMIN' || user?.role === 'SUPER_ADMIN'
+  const isAdmin = user?.role === 'ADMIN' || user?.role === 'BARBER' || user?.role === 'SUPER_ADMIN'
 
   const weekStart = startOfWeek(viewDate, { weekStartsOn: 1 })
   const weekDays = Array.from({ length: 7 }, (_, i) => addDays(weekStart, i))
@@ -94,31 +94,30 @@ export default function AgendaPage() {
       <div className="space-y-5">
         {/* Header */}
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-          <div className="flex items-center gap-3">
-            <button onClick={() => view === 'week' ? setViewDate(subWeeks(viewDate, 1)) : setSelectedDate(subDays(selectedDate, 1))} className="p-2 rounded-lg border border-zinc-800 hover:bg-zinc-800 text-zinc-400 hover:text-white transition-colors">
+          <div className="flex flex-wrap items-center gap-2 sm:gap-3">
+            <button onClick={() => view === 'week' ? setViewDate(subWeeks(viewDate, 1)) : setSelectedDate(subDays(selectedDate, 1))} className="p-2 rounded-lg border border-zinc-800 hover:bg-zinc-800 text-zinc-400 hover:text-white transition-colors shrink-0">
               <ChevronLeft size={18} />
             </button>
-            <h2 className="text-lg font-semibold text-white capitalize">
+            <h2 className="text-base sm:text-lg font-semibold text-white capitalize truncate">
               {view === 'week'
                 ? `${format(weekStart, 'dd MMM', { locale: ptBR })} — ${format(addDays(weekStart, 6), 'dd MMM yyyy', { locale: ptBR })}`
                 : format(selectedDate, "EEEE, d 'de' MMMM", { locale: ptBR })}
             </h2>
-            <button onClick={() => view === 'week' ? setViewDate(addWeeks(viewDate, 1)) : setSelectedDate(addDays(selectedDate, 1))} className="p-2 rounded-lg border border-zinc-800 hover:bg-zinc-800 text-zinc-400 hover:text-white transition-colors">
+            <button onClick={() => view === 'week' ? setViewDate(addWeeks(viewDate, 1)) : setSelectedDate(addDays(selectedDate, 1))} className="p-2 rounded-lg border border-zinc-800 hover:bg-zinc-800 text-zinc-400 hover:text-white transition-colors shrink-0">
               <ChevronRight size={18} />
             </button>
             <button
               onClick={() => { setViewDate(new Date()); setSelectedDate(new Date()) }}
-              className="text-xs text-amber-400 hover:text-amber-300 px-2 py-1 rounded border border-amber-500/20 hover:bg-amber-500/10 transition-colors"
+              className="text-xs text-amber-400 hover:text-amber-300 px-2 py-1 rounded border border-amber-500/20 hover:bg-amber-500/10 transition-colors shrink-0"
             >
               Hoje
             </button>
           </div>
-          <div className="flex gap-2">
+          <div className="flex flex-wrap items-center gap-2">
             <div className="flex bg-zinc-800 rounded-lg p-1">
               <button onClick={() => setView('week')} className={cn('px-3 py-1 text-sm rounded-md transition-colors', view === 'week' ? 'bg-zinc-700 text-white' : 'text-zinc-400 hover:text-white')}>Semana</button>
               <button onClick={() => setView('day')} className={cn('px-3 py-1 text-sm rounded-md transition-colors', view === 'day' ? 'bg-zinc-700 text-white' : 'text-zinc-400 hover:text-white')}>Dia</button>
             </div>
-            {isAdmin && (
               <select
                 className="bg-zinc-800 text-zinc-100 text-sm rounded-lg px-3 py-1.5 border border-zinc-700 focus:outline-none focus:ring-1 focus:ring-amber-500 max-w-[150px]"
                 value={selectedBarber}
@@ -129,8 +128,7 @@ export default function AgendaPage() {
                   <option key={e.id} value={e.id}>{e.name.split(' ')[0]}</option>
                 ))}
               </select>
-            )}
-            <Button onClick={() => setNewModalOpen(true)}>
+            <Button onClick={() => setNewModalOpen(true)} className="shrink-0">
               <Plus size={16} /> Agendar
             </Button>
           </div>
@@ -318,9 +316,13 @@ export default function AgendaPage() {
             <div className="space-y-4">
               <div className="bg-zinc-800 rounded-xl p-4 space-y-2">
                 <div className="flex items-center gap-3">
-                  <div className="w-10 h-10 rounded-full bg-amber-500/10 text-amber-400 flex items-center justify-center font-bold">
-                    {detailApt.customer.name.charAt(0)}
-                  </div>
+                  {detailApt.customer.user?.photo ? (
+                    <img src={detailApt.customer.user.photo} alt={detailApt.customer.name} className="w-10 h-10 rounded-full object-cover" />
+                  ) : (
+                    <div className="w-10 h-10 rounded-full bg-amber-500/10 text-amber-400 flex items-center justify-center font-bold">
+                      {detailApt.customer.name.charAt(0)}
+                    </div>
+                  )}
                   <div>
                     <p className="font-semibold text-white">{detailApt.customer.name}</p>
                     <p className="text-sm text-zinc-400">{detailApt.customer.phone}</p>

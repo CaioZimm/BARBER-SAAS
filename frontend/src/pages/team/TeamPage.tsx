@@ -12,7 +12,7 @@ export default function TeamPage() {
   const queryClient = useQueryClient()
   const [isModalOpen, setIsModalOpen] = useState(false)
   const [editingEmployee, setEditingEmployee] = useState<any>(null)
-  
+
   // Form State
   const [form, setForm] = useState({
     name: '',
@@ -35,8 +35,8 @@ export default function TeamPage() {
   })
 
   const mutation = useMutation({
-    mutationFn: (data: any) => editingEmployee 
-      ? employeeService.update(editingEmployee.id, data) 
+    mutationFn: (data: any) => editingEmployee
+      ? employeeService.update(editingEmployee.id, data)
       : employeeService.create(data),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['employees'] })
@@ -75,7 +75,7 @@ export default function TeamPage() {
       const isSelected = prev.service_ids.includes(serviceId)
       return {
         ...prev,
-        service_ids: isSelected 
+        service_ids: isSelected
           ? prev.service_ids.filter(id => id !== serviceId)
           : [...prev.service_ids, serviceId]
       }
@@ -124,9 +124,8 @@ export default function TeamPage() {
                           <span className="text-xs text-zinc-500">{employee.role}</span>
                         </div>
                       </div>
-                      <span className={`px-2 py-1 rounded-full text-[10px] font-bold ${
-                        employee.is_active_barber ? 'bg-emerald-500/10 text-emerald-500' : 'bg-red-500/10 text-red-500'
-                      }`}>
+                      <span className={`px-2 py-1 rounded-full text-[10px] font-bold ${employee.is_active_barber ? 'bg-emerald-500/10 text-emerald-500' : 'bg-red-500/10 text-red-500'
+                        }`}>
                         {employee.is_active_barber ? 'ATIVO' : 'INATIVO'}
                       </span>
                     </div>
@@ -173,7 +172,7 @@ export default function TeamPage() {
                 required
               />
               <Input
-                label={editingEmployee ? 'Nova Senha (opcional)' : 'Senha Inicial'}
+                label={editingEmployee ? 'Nova Senha (opcional)' : 'Senha'}
                 type="password"
                 value={form.password}
                 onChange={e => setForm({ ...form, password: e.target.value })}
@@ -187,13 +186,13 @@ export default function TeamPage() {
                 value={form.commission_rate}
                 onChange={e => setForm({ ...form, commission_rate: e.target.value })}
               />
-              
+
               <div>
                 <label className="block text-sm font-medium text-zinc-400 mb-2">Serviços Realizados</label>
                 <div className="grid grid-cols-2 gap-2 max-h-40 overflow-y-auto p-2 bg-zinc-950 rounded-lg border border-zinc-800">
                   {services.map((s: any) => (
                     <label key={s.id} className="flex items-center gap-2 text-sm text-zinc-300 cursor-pointer">
-                      <input 
+                      <input
                         type="checkbox"
                         checked={form.service_ids.includes(s.id)}
                         onChange={() => toggleService(s.id)}
@@ -206,7 +205,7 @@ export default function TeamPage() {
               </div>
 
               <label className="flex items-center gap-2 text-sm text-zinc-300 mt-4 cursor-pointer">
-                <input 
+                <input
                   type="checkbox"
                   checked={form.is_active_barber}
                   onChange={e => setForm({ ...form, is_active_barber: e.target.checked })}

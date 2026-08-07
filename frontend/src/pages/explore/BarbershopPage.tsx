@@ -67,8 +67,8 @@ export default function BarbershopPage() {
           </button>
           <div className="flex-1 min-w-0">
             <h1 className="text-sm font-bold text-white truncate">{shop.name}</h1>
-            <p className="text-xs text-zinc-500 flex items-center gap-1">
-              <MapPin size={10} /> @{shop.slug}
+            <p className="text-xs text-zinc-500 flex items-center gap-1 truncate">
+              <MapPin size={10} shrink-0 /> {(shop as any).address ? (shop as any).address : `@${shop.slug}`}
             </p>
           </div>
           <div className="w-8 h-8 rounded-lg bg-amber-500 flex items-center justify-center shrink-0">
@@ -82,8 +82,12 @@ export default function BarbershopPage() {
           {/* Hero card */}
           <div className="rounded-2xl border border-zinc-800 bg-gradient-to-br from-amber-500/10 to-zinc-900 p-6">
             <div className="flex items-center gap-4">
-              <div className="w-16 h-16 rounded-2xl bg-zinc-800 border border-zinc-700 flex items-center justify-center text-white font-bold text-2xl shrink-0">
-                {shop.name.split(' ').map((w) => w[0]).slice(0, 2).join('').toUpperCase()}
+              <div className="w-16 h-16 rounded-2xl bg-zinc-800 border border-zinc-700 flex items-center justify-center text-white font-bold text-2xl shrink-0 overflow-hidden">
+                {(shop as any).logo ? (
+                  <img src={(shop as any).logo} alt={shop.name} className="w-full h-full object-cover" />
+                ) : (
+                  shop.name.split(' ').map((w) => w[0]).slice(0, 2).join('').toUpperCase()
+                )}
               </div>
               <div>
                 <h2 className="text-xl font-bold text-white">{shop.name}</h2>
@@ -92,6 +96,11 @@ export default function BarbershopPage() {
                 </p>
               </div>
             </div>
+            {(shop as any).description && (
+              <p className="mt-4 text-sm text-zinc-300 leading-relaxed border-t border-zinc-800/50 pt-4">
+                {(shop as any).description}
+              </p>
+            )}
           </div>
 
           <Button className="w-full" size="lg" onClick={handleBookClick}>
